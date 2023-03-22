@@ -1,14 +1,15 @@
 import hassapi as hass
 from enum import Enum
+import asyncio
 
+LISTEN_BIN_SENSOR_1         = "binary_sensor.some_switch"
 
-WATER_HEATER_SWITCH    = "switch.warmwasserpumpe"
+WATER_HEATER_SWITCH         = "switch.warmwasserpumpe"
 LIGHT_DEFAULT_MODE_SCRIPT   = "script.led_band_bad_default_mode"
 LIGHT_EFFECT_WATER_WARMING  = "blinkred"
 LIGHT_EFFECT_WATER_WARM     = "green_effect"
 LIGHT_PLAYLIST_SHOWERING    = "duschen"
 LIGHT_EFFECT_SHOWERING_LONG = "langduschen"
-
 
 class ButtonAction(Enum):
     SHORT = 1
@@ -25,13 +26,13 @@ class State(Enum):
 
 class ShowerController(hass.Hass):
     def __init__(self):
-        self.currentState = None
+        self.currentState = State.IDLE
+        self.timeout_task = asyncio.Task
 
     def initialize(self):
         print("Initializing ShowerController")
 
-        self.currentState = State.IDLE
-
+        self.listen_state(self.handleButtonPress(), LISTEN_BIN_SENSOR_1, new="on")
         # TODO execute button press
 
     def handleButtonPress(self, action=ButtonAction.SHORT, kwargs=None):
@@ -56,6 +57,7 @@ class ShowerController(hass.Hass):
             self.currentState = 1
         else:
             self.currentState += 1
+
     # Execute action based on state
     def executeActions(self):
         self.cancelTimeout()
@@ -67,7 +69,7 @@ class ShowerController(hass.Hass):
             self.turn_on(LIGHT_EFFECT_WATER_WARMING)
             self.turn_on(WATER_HEATER_SWITCH)
             # Wait x minutes to next state
-            self.setTimeout(10)
+            self.timeout_task = asyncio.create_task(self.setTimeout(10))
 
         if self.currentState == State.WATER_WARM:
             self.turn_on(LIGHT_EFFECT_WATER_WARM)
@@ -83,8 +85,10 @@ class ShowerController(hass.Hass):
 
     def cancelTimeout(self):
         # TODO cancel timer
+        self.timeout_task.cancel()
+        print("TODO cancel timer")
 
-    def setTimeout(self, minutes):
-        # TODO implement async timer, then call executeActions
+    async def setTimeout(self, minutes):
+        await asyncio.wait(60*minutes)
         self.nextState()
         self.executeActions()
