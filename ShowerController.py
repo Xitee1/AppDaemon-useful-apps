@@ -1,6 +1,6 @@
 import hassapi as hass
 from enum import Enum
-import asyncio
+import time
 
 testmode = True
 
@@ -30,7 +30,6 @@ class State(Enum):
 class ShowerController(hass.Hass):
     def __init__(self):
         self.currentState = State.IDLE
-        self.timeout_task = asyncio.Task
 
     def initialize(self):
         print("Initializing ShowerController")
@@ -44,7 +43,6 @@ class ShowerController(hass.Hass):
             print("Shower-Button pressed shortly")
 
             self.next_state()
-
             self.execute_actions()
 
         if action == ButtonAction.LONG:
@@ -52,7 +50,6 @@ class ShowerController(hass.Hass):
             print("Shower-Button pressed long")
 
             self.currentState = State.IDLE
-
             self.execute_actions()
 
     def next_state(self):
@@ -72,7 +69,7 @@ class ShowerController(hass.Hass):
             self.turn_on(LIGHT_EFFECT_WATER_WARMING)
             self.turn_on(WATER_HEATER_SWITCH)
             # Wait x minutes to next state
-            self.timeout_task = asyncio.create_task(self.set_timeout(10))
+            self.set_timeout(10)
 
         if self.currentState == State.WATER_WARM:
             self.turn_on(LIGHT_EFFECT_WATER_WARM)
@@ -88,10 +85,9 @@ class ShowerController(hass.Hass):
 
     def cancel_timeout(self):
         # TODO cancel timer
-        self.timeout_task.cancel()
         print("TODO cancel timer")
 
-    async def set_timeout(self, minutes):
-        await asyncio.wait(60*minutes)
+    def set_timeout(self, minutes):
+        time.sleep(60 * minutes)
         self.next_state()
         self.execute_actions()
