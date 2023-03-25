@@ -38,7 +38,7 @@ class ShowerController(hass.Hass):
       off the water heater.
     - A long press cancels everything - Light will go into default mode and water heater will turn off.
 
-    Required Arguments:
+    Required arguments:
     - short_press_sensor:
         A input_button that triggers when the button is pressed short.
     - long_press_sensor:
