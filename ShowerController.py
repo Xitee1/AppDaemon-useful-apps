@@ -42,7 +42,7 @@ class ShowerController(hass.Hass):
             # Execute next-action
             print("Shower-Button pressed shortly")
 
-            self.next_state()
+            self.next_state(False)
             self.execute_actions()
 
         if action == ButtonAction.LONG:
@@ -52,11 +52,26 @@ class ShowerController(hass.Hass):
             self.currentState = State.IDLE
             self.execute_actions()
 
-    def next_state(self):
+    def next_state(self, by_timeout=False):
         if self.currentState == len(State):
             self.currentState = 1
         else:
-            self.currentState += 1
+            # If executed by timeout, go through all steps...
+            if by_timeout:
+                self.currentState += 1
+            # ..otherwise (if manually) specify the next state manually based on the current state
+            else:
+                # IDLE -> WATER_WARMING
+                if self.currentState == State.IDLE:
+                    self.currentState = State.WATER_WARMING
+
+                # WATER_WARMING or WATER_WARM -> SHOWERING
+                if self.currentState in (State.WATER_WARMING, State.WATER_WARM):
+                    self.currentState = State.SHOWERING
+
+                # SHOWERING or SHOWERING_LONG -> IDLE
+                if self.currentState in (State.SHOWERING, State.SHOWERING_LONG):
+                    self.currentState = State.IDLE
 
     # Execute action based on state
     def execute_actions(self):
@@ -89,5 +104,5 @@ class ShowerController(hass.Hass):
 
     def set_timeout(self, minutes):
         time.sleep(60 * minutes)
-        self.next_state()
+        self.next_state(True)
         self.execute_actions()
