@@ -1,0 +1,20 @@
+---
+# Example configuration for the apps
+generate_roomba_map:
+  module: generate_roomba_map
+  class: GenerateImage
+
+bad_oben_shower_controller:
+  module: ShowerController
+  class: ShowerController
+  debug: True
+  short_press_sensor: input_button.bad_oben_showercontroller_short_press
+  long_press_sensor: input_button.bad_oben_showercontroller_long_press
+  water_heater_switch: switch.warmwasserpumpe
+  led_strip_preset: select.led_band_bad_preset
+  led_strip_playlist: select.led_band_bad_playlist
+  led_strip_default_mode_script: script.bad_led_band_default_mode
+  preset_water_warming: "Wasser kalt hell"
+  preset_water_warm: "Wasser warm"
+  playlist_showering: "Dusch Effekt: Alles"
+  preset_showering_long: "Überschrittene Duschzeit"
