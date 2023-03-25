@@ -18,12 +18,12 @@ class State(Enum):
 
 class ShowerController(hass.Hass):
     """
-    Preheat the water, show the state of the heated water and when showering applying some cool effects to the light.
+    Preheat the water, show the state of the heated water by the color of the light and when showering applying some cool effects to the light.
     Only with a few presses on a button.
 
     Requirements:
     - Switch for water heater ('switch.')
-    - Input button for switch states (short and long press) ('input_button.')
+    - Any entity that changes its state (only!) when pressing the button (each, for short and long press)
     - LED strip in the shower running WLED
     - Script to set the light to a default mode
       In my case: After sunrise: Light goes off - After sunset: Light turn on at brightness level 1%
