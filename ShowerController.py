@@ -66,28 +66,39 @@ class ShowerController(hass.Hass):
         E.g. red blinks red.
     """
 
-    def __init__(self):
-        self.currentState = State.IDLE
-        self.water_heater = None
-        self.led_strip_preset = None
-        self.led_strip_playlist = None
-
     def initialize(self):
         print("Initializing ShowerController")
+        self.currentState = State.IDLE
+
+        self.debug = self.args['debug']
 
         self.water_heater = self.get_entity(self.args['water_heater_switch'])
         self.led_strip_preset = self.get_entity(self.args['led_strip_preset'])
         self.led_strip_playlist = self.get_entity(self.args['led_strip_playlist'])
 
-        self.listen_state(self.handle_button_press(), self.args['short_press_sensor'], new="on")
-        self.listen_state(self.handle_button_press(action=ButtonAction.LONG), self.args['long_press_sensor'], new="on")
+        self.get_entity(self.args['short_press_sensor']).listen_state(self.button_press_short)
+        self.get_entity(self.args['long_press_sensor']).listen_state(self.button_press_long)
 
-    def handle_button_press(self, action=ButtonAction.SHORT, kwargs=None):
+    def mylog(self, msg):
+        if self.debug:
+            self.log(msg)
+
+    #######
+    # This is needed because sadly in the listen_state function from AppDaemon you cannot specify parameters
+    # We also do not need all the arguments: entity, attribute, old, new, kwargs
+    def button_press_short(self, entity, attribute, old, new, kwargs):
+        self.handle_button_press(action=ButtonAction.SHORT)
+
+    def button_press_long(self, entity, attribute, old, new, kwargs):
+        self.handle_button_press(action=ButtonAction.LONG)
+    #######
+
+    def handle_button_press(self, action):
         if action == ButtonAction.SHORT:
             # Execute next-action
             print("Shower-Button pressed shortly")
 
-            self.next_state(False)
+            self.set_state(False)
             self.execute_actions()
 
         if action == ButtonAction.LONG:
@@ -97,13 +108,25 @@ class ShowerController(hass.Hass):
             self.currentState = State.IDLE
             self.execute_actions()
 
-    def next_state(self, by_timeout=False):
-        if self.currentState == len(State):
-            self.currentState = 1
-        else:
+    def set_state(self, state=None, ignore_logic=False):
+        """
+        :param state: optional -> automatically go to next state
+        :param ignore_logic: optional -> only relevant when state is None, increases state += 1 and does not set new state based on current state
+        :return:
+
+        Sets a new shower state, either automatically or applies the wanted state from the state parameter.
+        """
+
+        # For some reason state is not None by default as defined but False.
+        # If I set it to None with "state = None" it is none.. does someone know why this is??
+        # if state is None:
+        if state in (None, False):
             # If executed by timeout, go through all steps...
-            if by_timeout:
-                self.currentState += 1
+            if ignore_logic:
+                if self.currentState == len(State):
+                    self.currentState = 1
+                else:
+                    self.currentState += 1
             # ..otherwise (if manually) specify the next state manually based on the current state
             else:
                 # IDLE -> WATER_WARMING
@@ -111,44 +134,55 @@ class ShowerController(hass.Hass):
                     self.currentState = State.WATER_WARMING
 
                 # WATER_WARMING or WATER_WARM -> SHOWERING
-                if self.currentState in (State.WATER_WARMING, State.WATER_WARM):
+                elif self.currentState in (State.WATER_WARMING, State.WATER_WARM):
                     self.currentState = State.SHOWERING
 
                 # SHOWERING or SHOWERING_LONG -> IDLE
-                if self.currentState in (State.SHOWERING, State.SHOWERING_LONG):
+                elif self.currentState in (State.SHOWERING, State.SHOWERING_LONG):
                     self.currentState = State.IDLE
+
+                else:
+                    self.log(f"Error: Unknown state: {self.currentState}")
+        else:
+            self.currentState = state
+
+        self.mylog(f"State has changed to {self.currentState}")
 
     # Execute action based on state
     def execute_actions(self):
+        self.mylog(f"Executing actions. Current state is: {self.currentState}")
+
         self.cancel_timeout()
-        # TODO need to set select. entity instead turn on
+
         if self.currentState == State.IDLE:
             self.turn_on(self.args['led_strip_default_mode_script'])
             self.water_heater.turn_off()
 
         if self.currentState == State.WATER_WARMING:
-            self.led_strip_preset.set_state(state=self.args['preset_water_warming'])
+            self.led_strip_preset.call_service("select_option", option=self.args['preset_water_warming'])
             self.water_heater.turn_on()
             # Wait x minutes to next state
             self.set_timeout(10)
 
         if self.currentState == State.WATER_WARM:
-            self.led_strip_preset.set_state(state=self.args['preset_water_warm'])
+            self.led_strip_preset.call_service("select_option", option=self.args['preset_water_warm'])
             self.set_timeout(20)
 
         if self.currentState == State.SHOWERING:
-            self.led_strip_playlist.set_state(state=self.args['playlist_showering'])
+            self.led_strip_playlist.call_service("select_option", option=self.args['playlist_showering'])
             self.set_timeout(15)
 
         if self.currentState == State.SHOWERING_LONG:
-            self.led_strip_preset.set_state(state=self.args['preset_showering_long'])
+            self.led_strip_preset.call_service("select_option", option=self.args['preset_showering_long'])
             self.set_timeout(15)
 
     def cancel_timeout(self):
+        self.mylog("Timeout has been cancelled.")
         # TODO cancel timer
         print("TODO cancel timer")
 
     def set_timeout(self, minutes):
-        time.sleep(60 * minutes)
-        self.next_state(True)
-        self.execute_actions()
+        self.mylog(f"Timeout for current action in state {self.currentState} set to {minutes}min.")
+        #time.sleep(60 * minutes)
+        #self.set_state(ignore_logic=True)
+        #self.execute_actions()
