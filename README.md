@@ -4,6 +4,9 @@ The apps are made to fit in my specific case, but I try to make them configurabl
 
 You can just download them and copy the ones you need into your 'apps' folder.
 
+#### Some apps do require [fonts](apps/fonts/README.md).
+#### Some apps do require [additional python packages](INSTALL_PY_PACKAGES.md).
+
 ### Important: These apps are in an early state and do not fully work yet.
 ShowerController _works_ so far, but without the timeout to automatically skip to the next state.<br>
 GenerateRoombaMap also _works_ but needs a rewrite _again_ .. (This is already the 3th revision, started with a custom hass addon copied from dorita980 - but I'm getting closer)
