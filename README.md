@@ -33,3 +33,16 @@ GenerateRoombaMap also _works_ but needs a rewrite _again_ .. (This is already t
     - A long press cancels everything - Light will go into default mode and water heater will turn off.
 
 ## GenerateRoombaMap
+    Generate a map where roomba has cleaned your home.
+
+    To have the image in a camera entity:
+    - Add the following to your configuration.yaml:
+        camera:
+          - platform: local_file
+            name: Roomba Karte
+            file_path: /config/www/tmp/vacuum_yourRobotName/map.png
+
+    Requirements:
+    - A vacuum that exposes its cords as attribute the following format: Position (x, x, x)
+    - A floor plan of your home (TODO optional but recommended)
+    - pillow python package (Read INSTALL_PY_PACKAGES.md)
