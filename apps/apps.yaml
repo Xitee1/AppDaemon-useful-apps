@@ -1,8 +1,16 @@
 ---
 # Example configuration for the apps
-generate_roomba_map:
-  module: generate_roomba_map
+GenerateRoombaMap_vacuum_roomba:
+  module: GenerateRoombaMap
   class: GenerateImage
+  debug: True
+  vacuum_entity: vacuum.roomba
+  vacuum_name: roomba
+  floor_plan_location: /config/floorplans/home.png
+  tmp_path: /config/www/tmp
+  offset_cords_x: 200
+  offset_cords_y: 130
+  image_rotation: 90
 
 bad_oben_shower_controller:
   module: ShowerController
