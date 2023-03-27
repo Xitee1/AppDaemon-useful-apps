@@ -8,10 +8,9 @@ You can just download them and copy the ones you need into your 'apps' folder.
 #### Some apps do require [additional python packages](INSTALL_PY_PACKAGES.md).
 
 ### Important: These apps are in an early state and do not fully work yet.
-ShowerController _works_ so far, but without the timeout to automatically skip to the next state.<br>
-GenerateRoombaMap also _works_ but needs a rewrite _again_ .. (This is already the 3th revision, started with a custom hass addon copied from dorita980 - but I'm getting closer)
 
 ## ShowerController
+#### Timeout not working yet. State is only changeable by pressing the button - no water is warm signal, no long showering alarm.
     Preheat the water, show the state of the heated water by the color of the light and when showering applying some cool effects to the light.
     Only with a few presses on a button.
 
@@ -33,6 +32,7 @@ GenerateRoombaMap also _works_ but needs a rewrite _again_ .. (This is already t
     - A long press cancels everything - Light will go into default mode and water heater will turn off.
 
 ## GenerateRoombaMap
+#### Latest changes untested. _Should_ theoretically work, but could have major problems.
     Generate a map where roomba has cleaned your home.
 
     To have the image in a camera entity:
@@ -46,3 +46,23 @@ GenerateRoombaMap also _works_ but needs a rewrite _again_ .. (This is already t
     - A vacuum that exposes its cords as attribute the following format: Position (x, x, x)
     - A floor plan of your home (TODO optional but recommended)
     - pillow python package (Read INSTALL_PY_PACKAGES.md)
+
+# SolarDeviceController
+#### Not available yet, needs rewrite
+    Control devices based on solar production, power consumption, battery percentage (optional) and time (optional)
+    
+    Requirements:
+    - Sensor for current solar production (W), current power consumption (W), solar battery (%, optional)
+    - Controlled device must be controllable by services turn_on/turn_off
+    - Controlled devices need a rather constant consumption (Devices whose power supply varies a lot do not work well)
+    - Need to know the average power consumption of the devices (for Example: 700W, 900W,...).
+      It does not need smart plugs that measure the power consumption. These values must be hard-coded.
+# BatteryChargeLimiter
+#### Not available yet, needs rewrite
+#### Originally developed for solar battery, it is planned to make this work for more battery types (for example Smartphone charger with Smart Plug)
+    With this app you can limit the charge capacity of your batteries.
+    For some batteries, this can also only allow charge or only allow discharge.
+    
+    # TODO
+    Requirements:
+    - Controllable battery
