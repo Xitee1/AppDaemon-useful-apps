@@ -6,8 +6,8 @@ GenerateRoombaMap_vacuum_roomba:
   debug: True
   vacuum_entity: vacuum.roomba
   vacuum_name: roomba
-  floor_plan_location: /config/floorplans/home.png
   tmp_path: /config/www/tmp
+  floor_plan_location: /config/floorplans/home.png
   offset_cords_x: 200
   offset_cords_y: 130
   image_rotation: 90

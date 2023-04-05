@@ -85,7 +85,6 @@ class GenerateImage(hass.Hass):
         self.generate_image()
 
         # Listeners
-        # TODO reduce disk writes
         self.run_every(self.generate_image, start=self.datetime(), interval=5)
         self.vacuum.listen_state(self.write_log, attribute="position")
         self.vacuum.listen_state(self.clear_log, old="docked", new="cleaning", duration=10)
@@ -101,6 +100,8 @@ class GenerateImage(hass.Hass):
         """
         Load the log from the log file
         """
+        self.mylog("Loading log file..")
+
         with open(self.vacuum_log_path, 'r') as f:
             reader = csv.reader(f, delimiter=",")
 
@@ -109,10 +110,12 @@ class GenerateImage(hass.Hass):
                 y = int(row[1])
                 self.vacuum_cords.append([x, y])
 
-    def save_log(self):
+    def save_log(self, entity=None, attribute=None, old=None, new=None, kwargs=None):
         """
         Save the log to the log file
         """
+        self.mylog("Saving log..")
+
         with open(self.vacuum_log_path, "r+") as f:
             f.truncate(0)
 
@@ -135,10 +138,12 @@ class GenerateImage(hass.Hass):
             with open(self.vacuum_log_path, "a") as f:
                 f.write(f"{x},{y}\n")
 
-    def clear_log(self):
+    def clear_log(self, entity=None, attribute=None, old=None, new=None, kwargs=None):
         """
         Clears the cords array and the file
         """
+        self.mylog("Clearing log..")
+
         self.vacuum_cords = []
         with open(self.vacuum_log_path, 'r+') as f:
             f.truncate(0)
