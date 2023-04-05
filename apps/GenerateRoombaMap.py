@@ -22,7 +22,7 @@ MAP_OUTPUT_PATH = "{tmp_path}/vacuum_{name}/map.png"
 
 class GenerateImage(hass.Hass):
     """
-    Generate a map where roomba has cleaned your home.
+    Generates a map of the area cleaned by Roomba.
 
     To have the image in a camera entity:
     - Add the following to your configuration.yaml:
