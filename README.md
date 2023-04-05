@@ -32,8 +32,8 @@ You can just download them and copy the ones you need into your 'apps' folder.
     - A long press cancels everything - Light will go into default mode and water heater will turn off.
 
 ## GenerateRoombaMap
-#### Latest changes untested. _Should_ theoretically work, but could have major problems.
-    Generate a map where roomba has cleaned your home.
+#### TODO keep history of old maps instead deleting them
+    Generates a map of the area cleaned by Roomba.
 
     To have the image in a camera entity:
     - Add the following to your configuration.yaml:
