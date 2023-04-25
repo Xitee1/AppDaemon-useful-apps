@@ -9,6 +9,9 @@ You can just download them and copy the ones you need into your 'apps' folder.
 
 ### Important: These apps are in an early state and do not fully work yet.
 
+### General Todo
+- Move apps into their own folders and also create a README for all of them in that folder instead everything in the main README.
+
 ## ShowerController
 #### Timeout not working yet. State is only changeable by pressing the button - no water is warm signal, no long showering alarm.
 #### Example apps.yaml is out of date!
