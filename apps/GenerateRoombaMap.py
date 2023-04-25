@@ -16,8 +16,8 @@ POINT_COLOR_DOCKED = (255, 255, 255)
 # TODO need to use absolute path? Relative paths in this format do not work. fonts folder is in the apps folder, where the script is
 font = ImageFont.truetype("/config/appdaemon/apps/fonts/Arimo-Bold.ttf", size=32)
 
-VACUUM_LOG_PATH = "{tmp_path}/vacuum_{name}/vacuum.log"
-MAP_OUTPUT_PATH = "{tmp_path}/vacuum_{name}/map.png"
+VACUUM_LOG_RAW_PATH = "{tmp_path}/vacuum_{name}/vacuum.log"
+MAP_OUTPUT_RAW_PATH = "{tmp_path}/vacuum_{name}/map.png"
 
 
 class GenerateImage(hass.Hass):
@@ -75,8 +75,8 @@ class GenerateImage(hass.Hass):
         self.vacuum = self.get_entity(self.args['vacuum_entity'])
 
         self.map_path = self.args['floor_plan_location']
-        self.vacuum_log_path = VACUUM_LOG_PATH.replace("{tmp_path}", self.args['tmp_path']).replace("{name}", self.args['vacuum_name'])
-        self.map_output_path = MAP_OUTPUT_PATH.replace("{tmp_path}", self.args['tmp_path']).replace("{name}", self.args['vacuum_name'])
+        self.vacuum_log_path = VACUUM_LOG_RAW_PATH.replace("{tmp_path}", self.args['tmp_path']).replace("{name}", self.args['vacuum_name'])
+        self.map_output_path = MAP_OUTPUT_RAW_PATH.replace("{tmp_path}", self.args['tmp_path']).replace("{name}", self.args['vacuum_name'])
 
         self.image_rotation = self.args['image_rotation']
 
