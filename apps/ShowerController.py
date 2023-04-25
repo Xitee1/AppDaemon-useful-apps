@@ -1,6 +1,7 @@
 import hassapi as hass
 from enum import Enum
 import time
+from appdaemon.exceptions import TimeOutException
 
 
 class ButtonAction(Enum):
@@ -52,18 +53,34 @@ class ShowerController(hass.Hass):
     - led_strip_default_mode_script:
         A script that turns off the light.
         This is a script to allow some extra functions if you for example want to turn on the light at night at a low brightness level.
+
     - preset_water_warming:
         The preset name for the "water is warming"-state.
         E.g. a preset that lets the light shine blue.
-    - preset_water_warm
+    - preset_water_warm:
         The preset name for the "water is warm"-state.
         E.g. a preset that lets the light shine green.
-    - playlist_showering
+    - playlist_showering:
         The playlist name for the "showering"-state.
         This playlist can be filled with cool effects that play while showering.
-    - preset_showering_long
+    - preset_showering_long:
         The preset name for the "showering long"-state.
         E.g. red blinks red.
+
+    Optional arguments:
+    - led_strip_controlled_by_script:
+        This binary sensor will be set to on while the script is controlling the light. This allows you to use it as condition for other automations.
+        Use any entity id for it that does not exist.
+        Default: none
+    - preheat_duration:
+        How long the heater must be on so the state changes to "WATER_WARM". For example if your heater needs 10 minutes to make warm water, set it to 10.
+        Default: 10
+    - general_timeout_duration:
+        If a state takes longer than this timeout, the app cancels, turns off the heater and the lights.
+        Default: 20
+    - time_to_shower_warning:
+        When showering longer than the set minutes the light will switch to the "preset_showering_long" preset indicating that you should stop showering.
+        Default: 10
     """
 
     def initialize(self):
@@ -71,10 +88,15 @@ class ShowerController(hass.Hass):
         self.currentState = State.IDLE
 
         self.debug = self.args['debug']
+        self.preheat_duration = (self.args['preheat_duration'] or 10) * 60
+        self.general_timeout_duration = (self.args['general_timeout_duration'] or 20) * 60
+        self.time_to_shower_warning = (self.args['time_to_shower_warning'] or 10) * 60
 
         self.water_heater = self.get_entity(self.args['water_heater_switch'])
         self.led_strip_preset = self.get_entity(self.args['led_strip_preset'])
         self.led_strip_playlist = self.get_entity(self.args['led_strip_playlist'])
+        self.led_strip_controlled_by_script = self.get_entity(self.args['led_strip_controlled_by_script']) # TODO make optional
+
 
         self.get_entity(self.args['short_press_sensor']).listen_state(self.button_press_short)
         self.get_entity(self.args['long_press_sensor']).listen_state(self.button_press_long)
@@ -148,6 +170,13 @@ class ShowerController(hass.Hass):
 
         self.mylog(f"State has changed to {self.currentState}")
 
+    async def wait_for_heater(self):
+        try:
+            await self.water_heater.wait_state("on", duration=30, timeout=30)  # wait for it to completely run
+        except TimeOutException:
+            self.set_state(State.IDLE)
+            pass
+
     # Execute action based on state
     def execute_actions(self):
         self.mylog(f"Executing actions. Current state is: {self.currentState}")
@@ -161,20 +190,20 @@ class ShowerController(hass.Hass):
         if self.currentState == State.WATER_WARMING:
             self.led_strip_preset.call_service("select_option", option=self.args['preset_water_warming'])
             self.water_heater.turn_on()
-            # Wait x minutes to next state
-            self.set_timeout(10)
+            # TODO Wait (wait_for_heater())
+
 
         if self.currentState == State.WATER_WARM:
             self.led_strip_preset.call_service("select_option", option=self.args['preset_water_warm'])
-            self.set_timeout(20)
+            self.set_timeout(self.general_timeout_duration)
 
         if self.currentState == State.SHOWERING:
             self.led_strip_playlist.call_service("select_option", option=self.args['playlist_showering'])
-            self.set_timeout(15)
+            self.set_timeout(self.general_timeout_duration)
 
         if self.currentState == State.SHOWERING_LONG:
             self.led_strip_preset.call_service("select_option", option=self.args['preset_showering_long'])
-            self.set_timeout(15)
+            self.set_timeout(self.general_timeout_duration)
 
     def cancel_timeout(self):
         self.mylog("Timeout has been cancelled.")

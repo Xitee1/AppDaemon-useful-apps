@@ -11,6 +11,7 @@ You can just download them and copy the ones you need into your 'apps' folder.
 
 ## ShowerController
 #### Timeout not working yet. State is only changeable by pressing the button - no water is warm signal, no long showering alarm.
+#### Example apps.yaml is out of date!
     Preheat the water, show the state of the heated water by the color of the light and when showering applying some cool effects to the light.
     Only with a few presses on a button.
 
@@ -30,6 +31,49 @@ You can just download them and copy the ones you need into your 'apps' folder.
     - After you're done showering, press the button again. This will set the light to the default mode and turns
       off the water heater.
     - A long press cancels everything - Light will go into default mode and water heater will turn off.
+
+    Required arguments:
+    - short_press_sensor:
+        A input_button that triggers when the button is pressed short.
+    - long_press_sensor:
+        A input_button that triggers when the button is pressed long.
+    - water_heater_switch:
+        The switch that will turn on the water heater.
+    - led_strip_preset:
+        The WLED preset 'select.' entity of the LED strip.
+    - led_strip_playlist:
+        The WLED playlist 'select.' entity of the LED strip.
+    - led_strip_default_mode_script:
+        A script that turns off the light.
+        This is a script to allow some extra functions if you for example want to turn on the light at night at a low brightness level.
+
+    - preset_water_warming:
+        The preset name for the "water is warming"-state.
+        E.g. a preset that lets the light shine blue.
+    - preset_water_warm:
+        The preset name for the "water is warm"-state.
+        E.g. a preset that lets the light shine green.
+    - playlist_showering:
+        The playlist name for the "showering"-state.
+        This playlist can be filled with cool effects that play while showering.
+    - preset_showering_long:
+        The preset name for the "showering long"-state.
+        E.g. red blinks red.
+
+    Optional arguments:
+    - led_strip_controlled_by_script:
+        This binary sensor will be set to on while the script is controlling the light. This allows you to use it as condition for other automations.
+        Use any entity id for it that does not exist.
+        Default: none
+    - preheat_duration:
+        How long the heater must be on so the state changes to "WATER_WARM". For example if your heater needs 10 minutes to make warm water, set it to 10.
+        Default: 10
+    - general_timeout_duration:
+        If a state takes longer than this timeout, the app cancels, turns off the heater and the lights.
+        Default: 20
+    - time_to_shower_warning:
+        When showering longer than the set minutes the light will switch to the "preset_showering_long" preset indicating that you should stop showering.
+        Default: 10
 
 ## GenerateRoombaMap
 #### TODO keep history of old maps instead deleting them
