@@ -35,12 +35,11 @@ You can just download them and copy the ones you need into your 'apps' folder.
 #### TODO keep history of old maps instead deleting them
     Generates a map of the area cleaned by Roomba.
 
-    To have the image in a camera entity:
-    - Add the following to your configuration.yaml:
-        camera:
-          - platform: local_file
-            name: Roomba Karte
-            file_path: /config/www/tmp/vacuum_yourRobotName/map.png
+    To have the image in a camera entity, add the following to your configuration.yaml:
+    camera:
+      - platform: local_file
+        name: Roomba Karte
+        file_path: /config/www/tmp/vacuum_yourRobotName/map.png
 
     Requirements:
     - A vacuum that exposes its cords as attribute the following format: Position (x, x, x)
