@@ -46,7 +46,6 @@ You can just download them and copy the ones you need into your 'apps' folder.
     - led_strip_default_mode_script:
         A script that turns off the light.
         This is a script to allow some extra functions if you for example want to turn on the light at night at a low brightness level.
-
     - preset_water_warming:
         The preset name for the "water is warming"-state.
         E.g. a preset that lets the light shine blue.
