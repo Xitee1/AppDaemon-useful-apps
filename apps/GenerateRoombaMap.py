@@ -33,8 +33,9 @@ class GenerateImage(hass.Hass):
 
     Requirements:
     - A vacuum that exposes its cords as attribute the following format: Position (x, x, x)
-    - A floor plan of your home (TODO optional but recommended)
+    - A floor plan of your home (// TODO make optional (but recommended) //)
     - pillow python package (Read INSTALL_PY_PACKAGES.md)
+    - This app needs the "fonts" folder to work. // TODO For now, make sure the fonts are in the absolute path "/config/appdaemon/apps/fonts/Arimo-Bold.ttf"!! //
 
     Required arguments:
     - debug:
@@ -52,7 +53,7 @@ class GenerateImage(hass.Hass):
     - offset_cord_y:
         Adjust the offset so the generated lines match the floor plan
     - image_rotation:
-        If the cords aren't drawn correctly to the map, you can try it with rotating the image (0, 90, 180, 270)
+        If the cords aren't drawn correctly to the map, you can try rotating the image (0, 90, 180, 270)
 
     """
 

@@ -35,16 +35,36 @@ You can just download them and copy the ones you need into your 'apps' folder.
 #### TODO keep history of old maps instead deleting them
     Generates a map of the area cleaned by Roomba.
 
-    To have the image in a camera entity, add the following to your configuration.yaml:
-    camera:
-      - platform: local_file
-        name: Roomba Karte
-        file_path: /config/www/tmp/vacuum_yourRobotName/map.png
+    To have the image in a camera entity:
+    - Add the following to your configuration.yaml:
+        camera:
+          - platform: local_file
+            name: Roomba Karte
+            file_path: /config/www/tmp/vacuum_yourRobotName/map.png
 
     Requirements:
     - A vacuum that exposes its cords as attribute the following format: Position (x, x, x)
-    - A floor plan of your home (TODO optional but recommended)
+    - A floor plan of your home (// TODO make optional (but recommended) //)
     - pillow python package (Read INSTALL_PY_PACKAGES.md)
+    - This app needs the "fonts" folder to work. // TODO For now, make sure the fonts are in the absolute path "/config/appdaemon/apps/fonts/Arimo-Bold.ttf"!! //
+
+    Required arguments:
+    - debug:
+        Enable debug log
+    - vacuum_entity:
+        Your vacuum entity. E.g. 'vacuum.roomba'
+    - vacuum_name:
+        Used for naming the vacuum folders.
+    - tmp_path:
+        Path to a tmp folder where the log and image should be stored. E.g. /config/www/tmp
+    - floor_plan_location:
+        The file path of your floor plan. E.g. '/config/floorplans/home.png'
+    - offset_cords_x:
+        Adjust the offset so the generated lines match the floor plan
+    - offset_cord_y:
+        Adjust the offset so the generated lines match the floor plan
+    - image_rotation:
+        If the cords aren't drawn correctly to the map, you can try rotating the image (0, 90, 180, 270)
 
 # SolarDeviceController
 #### Not available yet, needs rewrite
