@@ -152,16 +152,17 @@ class GenerateImage(hass.Hass):
     """
     Image tools
     """
-    def write_point(self, color, location):
+    def draw_point(self, x, y, color, size=2):
         # cv2.circle(image, location, radius=14, color=color, thickness=-1)
         # TODO draw point
-        i = 0 # TODO remove (prevents method empty error)
+        x2 = x + size
+        y2 = x + size
 
-    def write_point_info(self, color, text):
-        self.write_point(color, (15, self.line_space + 15))
-        self.draw.text((30, self.line_space + 23), text, color, font=font)
-        self.line_space += 30
+        self.draw.point([(x, y), (x2, y2)], color)
 
+    """
+    Generate Map Image
+    """
     def generate_image(self, entity=None, attribute=None, old=None, new=None, kwargs=None):
         """
         Generates the image and saves it to disk.
