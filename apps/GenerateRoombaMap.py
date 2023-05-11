@@ -158,11 +158,11 @@ class GenerateImage(hass.Hass):
     """
     Image tools
     """
-    def draw_point(self, x, y, color, size=2):
+    def draw_point(self, x, y, color, size=35):
         x2 = x + size
-        y2 = x + size
+        y2 = y + size
 
-        self.draw.point([(x, y), (x2, y2)], color)
+        self.draw.ellipse([(x, y), (x2, y2)], color)
 
     """
     Generate Map Image
@@ -183,11 +183,11 @@ class GenerateImage(hass.Hass):
         image = Image.open(self.map_path)
         self.draw = ImageDraw.Draw(image)
 
-        self.write_point_info(POINT_COLOR_DOCKED, "Angedockt")
-        self.write_point_info(POINT_COLOR_RUNNING, "Saugen")
-        self.write_point_info(POINT_COLOR_RETURN, "Rueckkehr")
-        self.write_point_info(POINT_COLOR_STUCK, "Steckt fest")
-        self.line_space = 0
+        #self.write_point_info(POINT_COLOR_DOCKED, "Angedockt")
+        #self.write_point_info(POINT_COLOR_RUNNING, "Saugen")
+        #self.write_point_info(POINT_COLOR_RETURN, "Rueckkehr")
+        #self.write_point_info(POINT_COLOR_STUCK, "Steckt fest")
+        #self.line_space = 0
 
         image = image.rotate(self.image_rotation)
         self.draw = ImageDraw.Draw(image)
@@ -207,13 +207,13 @@ class GenerateImage(hass.Hass):
 
         # Write current vacuum state to the map image
         if vacuum_state == "docked":  # or vacuum_status == "charging"
-            self.write_point(POINT_COLOR_DOCKED, (self.draw_last_y, self.draw_last_x))
-        elif vacuum_state == "running":
-            self.write_point(POINT_COLOR_RUNNING, (self.draw_last_y, self.draw_last_x))
+            self.draw_point(self.draw_last_y, self.draw_last_x, POINT_COLOR_DOCKED)
         elif vacuum_state == "return":
-            self.write_point(POINT_COLOR_RETURN, (self.draw_last_y, self.draw_last_x))
+            self.draw_point(self.draw_last_y, self.draw_last_x, POINT_COLOR_RETURN)
         elif vacuum_state == "stuck":
-            self.write_point(POINT_COLOR_STUCK, (self.draw_last_y, self.draw_last_x))
+            self.draw_point(self.draw_last_y, self.draw_last_x, POINT_COLOR_STUCK)
+        else:
+            self.draw_point(self.draw_last_y, self.draw_last_x, POINT_COLOR_RUNNING)
 
         # Rotate image to match the floor plan and save
         image = image.rotate(-self.image_rotation)
