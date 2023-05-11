@@ -177,21 +177,13 @@ class GenerateImage(hass.Hass):
 
         # Stop updating the image if Roomba is docked since one minute or longer to reduce processor use and storage wear.
         docked_since_one_min = (not preparing) and self.render_template("{{ is_state('"+self.vacuum_entity_id+"', 'docked') and (now() > states."+self.vacuum_entity_id+".last_changed + timedelta(minutes=1)) }}")
-        self.mylog("Image will be generated: "+str(not docked_since_one_min))
+        # self.mylog("Image will be generated: "+str(not docked_since_one_min))
         if docked_since_one_min:
             return
-
-        #self.mylog("Vacuum state: {}".format(vacuum_state))
 
         # Load base image
         image = Image.open(self.map_path)
         self.draw = ImageDraw.Draw(image)
-
-        #self.write_point_info(POINT_COLOR_DOCKED, "Angedockt")
-        #self.write_point_info(POINT_COLOR_RUNNING, "Saugen")
-        #self.write_point_info(POINT_COLOR_RETURN, "Rueckkehr")
-        #self.write_point_info(POINT_COLOR_STUCK, "Steckt fest")
-        #self.line_space = 0
 
         image = image.rotate(self.image_rotation)
         self.draw = ImageDraw.Draw(image)
@@ -210,7 +202,7 @@ class GenerateImage(hass.Hass):
             self.draw_last_y = y
 
         # Write current vacuum state to the map image
-        if vacuum_state == "docked":  # or vacuum_status == "charging"
+        if vacuum_state == "docked":
             self.draw_point(self.draw_last_y, self.draw_last_x, POINT_COLOR_DOCKED)
         elif vacuum_state == "return":
             self.draw_point(self.draw_last_y, self.draw_last_x, POINT_COLOR_RETURN)
