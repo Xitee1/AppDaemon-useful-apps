@@ -74,6 +74,7 @@ class GenerateImage(hass.Hass):
         self.debug = self.args['debug']
 
         self.vacuum = self.get_entity(self.args['vacuum_entity'])
+        self.vacuum_entity_id = self.args['vacuum_entity']
 
         self.map_path = self.args['floor_plan_location']
         self.vacuum_log_path = VACUUM_LOG_RAW_PATH.replace("{tmp_path}", self.args['tmp_path']).replace("{name}", self.args['vacuum_name'])
@@ -89,7 +90,7 @@ class GenerateImage(hass.Hass):
 
         # Prepare app
         self.load_log()
-        self.generate_image()
+        self.generate_image(preparing=True)
 
         # Listeners
         self.run_every(self.generate_image, start="now+10", interval=10)
@@ -167,14 +168,17 @@ class GenerateImage(hass.Hass):
     """
     Generate Map Image
     """
-    def generate_image(self, entity=None, attribute=None, old=None, new=None, kwargs=None):
+    def generate_image(self, entity=None, attribute=None, old=None, new=None, kwargs=None, preparing=False):
         """
         Generates the image and saves it to disk.
         """
         # Get data from HA
         vacuum_state = self.vacuum.get_state()
 
-        if vacuum_state == "docked":
+        # Stop updating the image if Roomba is docked since one minute or longer to reduce processor use and storage wear.
+        docked_since_one_min = (not preparing) and self.render_template("{{ is_state('"+self.vacuum_entity_id+"', 'docked') and (now() > states."+self.vacuum_entity_id+".last_changed + timedelta(minutes=1)) }}")
+        self.mylog("Image will be generated: "+str(not docked_since_one_min))
+        if docked_since_one_min:
             return
 
         #self.mylog("Vacuum state: {}".format(vacuum_state))
