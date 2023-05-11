@@ -1,6 +1,6 @@
 import hassapi as hass
 import csv
-import datetime
+import os
 from PIL import Image, ImageDraw, ImageFont
 
 # You can adjust colors and style here
@@ -81,12 +81,18 @@ class GenerateImage(hass.Hass):
 
         self.image_rotation = self.args['image_rotation']
 
+        # Prepare paths
+        os.makedirs(name=os.path.dirname(self.vacuum_log_path), exist_ok=True)
+        os.makedirs(name=os.path.dirname(self.map_output_path), exist_ok=True)
+        if not os.path.exists(self.vacuum_log_path): # Log file needs to be created if it does not exist.
+            open(self.vacuum_log_path, "x")
+
         # Prepare app
         self.load_log()
         self.generate_image()
 
         # Listeners
-        self.run_every(self.generate_image, start=self.datetime(), interval=5)
+        self.run_every(self.generate_image, start="now+10", interval=10)
         self.vacuum.listen_state(self.write_log, attribute="position")
         self.vacuum.listen_state(self.clear_log, old="docked", new="cleaning", duration=10)
         self.vacuum.listen_state(self.save_log, new="docked")
@@ -153,8 +159,6 @@ class GenerateImage(hass.Hass):
     Image tools
     """
     def draw_point(self, x, y, color, size=2):
-        # cv2.circle(image, location, radius=14, color=color, thickness=-1)
-        # TODO draw point
         x2 = x + size
         y2 = x + size
 
