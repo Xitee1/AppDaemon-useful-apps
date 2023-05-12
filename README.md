@@ -79,6 +79,8 @@ You can just download them and copy the ones you need into your 'apps' folder.
 
 ## GenerateRoombaMap
 #### TODO keep history of old maps instead deleting them
+<img src="https://github.com/Xitee1/AppDaemon-useful-apps/assets/59659167/823517c2-d144-49ed-8333-e6b889889b78" height="300">
+
     Generates a map of the area cleaned by Roomba.
 
     To have the image in a camera entity:
