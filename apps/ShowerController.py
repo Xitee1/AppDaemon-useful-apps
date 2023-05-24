@@ -86,15 +86,18 @@ class ShowerController(hass.Hass):
         print("Initializing ShowerController")
         self.currentState = State.IDLE
 
+        # Arguments
         self.debug = self.args['debug']
-        self.preheat_duration = (self.args['preheat_duration'] or 10) * 60
-        self.general_timeout_duration = (self.args['general_timeout_duration'] or 20) * 60
-        self.time_to_shower_warning = (self.args['time_to_shower_warning'] or 10) * 60
 
         self.water_heater = self.get_entity(self.args['water_heater_switch'])
         self.led_strip_preset = self.get_entity(self.args['led_strip_preset'])
         self.led_strip_playlist = self.get_entity(self.args['led_strip_playlist'])
-        self.led_strip_controlled_by_script = self.get_entity(self.args['led_strip_controlled_by_script']) # TODO make optional
+
+        # Optional arguments
+        self.led_strip_controlled_by_script = (self.args['led_strip_controlled_by_script'] if 'led_strip_controlled_by_script' in self.args else None)
+        self.preheat_duration = (int(self.args['preheat_duration']) if 'preheat_duration' in self.args else 10) * 60
+        self.general_timeout_duration = (int(self.args['general_timeout_duration']) if 'general_timeout_duration' in self.args else 20) * 60
+        self.time_to_shower_warning = (int(self.args['time_to_shower_warning']) if 'time_to_shower_warning' in self.args else 10) * 60
 
 
         self.get_entity(self.args['short_press_sensor']).listen_state(self.button_press_short)
