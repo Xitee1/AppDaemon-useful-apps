@@ -171,7 +171,9 @@ class ShowerController(hass.Hass):
 
     async def wait_for_heater(self):
         try:
-            await self.water_heater.wait_state("on", duration=30, timeout=30)  # wait for it to completely run
+            await self.water_heater.wait_state("on", duration=30, timeout=30)
+            self.set_state(state=None, ignore_logic=True)
+            self.execute_actions()
         except TimeOutException:
             self.set_state(State.IDLE)
             pass
@@ -189,8 +191,7 @@ class ShowerController(hass.Hass):
         if self.currentState == State.WATER_WARMING:
             self.led_strip_preset.call_service("select_option", option=self.args['preset_water_warming'])
             self.water_heater.turn_on()
-            # TODO Wait (wait_for_heater())
-
+            self.wait_for_heater()
 
         if self.currentState == State.WATER_WARM:
             self.led_strip_preset.call_service("select_option", option=self.args['preset_water_warm'])
@@ -209,8 +210,10 @@ class ShowerController(hass.Hass):
         # TODO cancel timer
         print("TODO cancel timer")
 
-    def set_timeout(self, minutes):
+    async def set_timeout(self, minutes):
         self.mylog(f"Timeout for current action in state {self.currentState} set to {minutes}min.")
-        #time.sleep(60 * minutes)
-        #self.set_state(ignore_logic=True)
-        #self.execute_actions()
+
+
+        time.sleep(60 * minutes)
+        self.set_state(state=None, ignore_logic=True)
+        self.execute_actions()
