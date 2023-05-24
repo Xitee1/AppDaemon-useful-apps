@@ -10,9 +10,11 @@ class LastExcessState(Enum):
 
 
 class Device:
-    def __init__(self, name, consumption, minimum_toggle_interval=20):
+    def __init__(self, name, consumption, enabled_by=None, enabled_state="on", minimum_toggle_interval=20):
         self.name = name
         self.consumption = consumption
+        self.enabled_by = enabled_by
+        self.enabled_state = enabled_state
         self.minimum_toggle_interval = minimum_toggle_interval
 
         self.enabled = False
@@ -76,12 +78,31 @@ class SolarDeviceController(hass.Hass):
         self.last_excess_state = LastExcessState.NONE
 
         # TODO load devices from apps.yaml
-        # Optional parameters: minimum_toggle_interval - In seconds; Default: 20
+        # Optional parameters:
+        # - enabled_by - Entity that enables this device; Default: None
+        # - enabled_state - State for the enabled_by entity; Default: 'on'
+        # - minimum_toggle_interval - In seconds; Default: 20
         self.devices = {
-            Device(name="switch.heizteppich_kuche", consumption=300),
-            Device(name="switch.heizteppich_esszimmer", consumption=660),
-            Device(name="switch.heizung_bad_unten", consumption=900),
-            Device(name="switch.heizung_werkstatt", consumption=1500),
+            Device(
+                name="switch.heizteppich_kuche",
+                consumption=300,
+                enabled_by="input_boolean.solar_automatik_heizteppich_kuche",
+            ),
+            Device(
+                name="switch.heizteppich_esszimmer",
+                consumption=660,
+                enabled_by="input_boolean.solar_automatik_heizteppich_esszimmer",
+            ),
+            Device(
+                name="switch.heizung_bad_unten",
+                consumption=900,
+                enabled_by="input_boolean.solar_automatik_heizung_bad_unten",
+            ),
+            Device(
+                name="switch.heizung_werkstatt",
+                consumption=1500,
+                enabled_by="input_boolean.solar_automatik_heizung_werkstatt",
+            ),
         }
 
         print("Initialization finished!")
@@ -146,7 +167,7 @@ class SolarDeviceController(hass.Hass):
         self.mylog("Looping. Excess power: " + str(excess_power) + "; current_state_timer: "+str(self.current_excess_state_timer)+"; excess_state: " + str(self.last_excess_state))
 
         # Control devices if excess is positive and the state is positive for at least "power_on_wait_stable"
-        if self.current_excess_state_timer >= self.power_on_wait_stable:
+        if self.last_excess_state == excess_state and self.current_excess_state_timer >= self.power_on_wait_stable:
             for device in self.devices:
                 excess_power -= self.control_device(device, excess_power)
 
@@ -154,10 +175,10 @@ class SolarDeviceController(hass.Hass):
             self.mylog("Done: excess: " + str(excess_power))
 
     def update_device_state(self, device):
-        if self.get_state("input_boolean.solar_automatik_" + device.name.split('.')[1]) == 'on':
+        if device.enabled_by is None:
             device.enabled = True
         else:
-            device.enabled = False
+            device.enabled = self.get_state(device.enabled_by) == device.enabled_state
 
     """
     Turns a device on or off based on the excessPower.
