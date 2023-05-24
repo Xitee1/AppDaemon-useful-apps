@@ -122,14 +122,14 @@ class ShowerController(hass.Hass):
             # Execute next-action
             print("Shower-Button pressed shortly")
 
-            self.set_state(False)
+            self.set_state()  # Do state logic and set next state
             self.execute_actions()
 
         if action == ButtonAction.LONG:
             # Cancel script
             print("Shower-Button pressed long")
 
-            self.currentState = State.IDLE
+            self.set_state(state=State.IDLE)
             self.execute_actions()
 
     def set_state(self, state=None, ignore_logic=False):
@@ -172,15 +172,6 @@ class ShowerController(hass.Hass):
 
         self.mylog(f"State has changed to {self.currentState}")
 
-    async def wait_for_heater(self):
-        try:
-            await self.water_heater.wait_state("on", duration=30, timeout=30)
-            self.set_state(state=None, ignore_logic=True)
-            self.execute_actions()
-        except TimeOutException:
-            self.set_state(State.IDLE)
-            pass
-
     # Execute action based on state
     def execute_actions(self):
         self.mylog(f"Executing actions. Current state is: {self.currentState}")
@@ -213,10 +204,21 @@ class ShowerController(hass.Hass):
         # TODO cancel timer
         print("TODO cancel timer")
 
-    async def set_timeout(self, minutes):
-        self.mylog(f"Timeout for current action in state {self.currentState} set to {minutes}min.")
+    async def set_timeout(self, seconds):
+        self.mylog(f"Timeout for current action in state {self.currentState} set to {int(seconds / 60)}min.")
+        # TODO Timeout does not work that way because it is not cancelable
+        #time.sleep(seconds)
+        #self.set_state(state=None, ignore_logic=True)
+        #self.execute_actions()
 
+    async def wait_for_heater(self):
+        self.mylog(f"Waiting for heater to be on for {int(self.preheat_duration / 60)}min")
 
-        time.sleep(60 * minutes)
-        self.set_state(state=None, ignore_logic=True)
-        self.execute_actions()
+        try:
+            await self.water_heater.wait_state("on", duration=self.preheat_duration, timeout=self.preheat_duration)
+            self.set_state(state=None, ignore_logic=True)
+            self.execute_actions()
+        except TimeOutException:
+            self.set_state(State.IDLE)
+            pass
+
