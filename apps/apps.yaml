@@ -21,8 +21,8 @@ bad_oben_shower_controller:
   water_heater_switch: switch.warmwasserpumpe
   led_strip_preset: select.led_band_bad_preset
   led_strip_playlist: select.led_band_bad_playlist
-  led_strip_default_mode_script: script.bad_led_band_default_mode
+  led_strip_turn_off: light.led_band_bad
   preset_water_warming: "Wasser kalt hell"
   preset_water_warm: "Wasser warm"
-  playlist_showering: "Dusch Effekt: Alles"
   preset_showering_long: "Überschrittene Duschzeit"
+  playlist_showering: "Dusch Effekt: Alles"

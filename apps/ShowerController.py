@@ -50,21 +50,23 @@ class ShowerController(hass.Hass):
         The WLED preset 'select.' entity of the LED strip.
     - led_strip_playlist:
         The WLED playlist 'select.' entity of the LED strip.
-    - led_strip_default_mode_script:
-        A script that turns off the light.
-        This is a script to allow some extra functions if you for example want to turn on the light at night at a low brightness level.
+    - led_strip_turn_off:
+        Any entity with that turns the light off (e.g.: light.shower_light)
+        You can also specify a script here (e.g.: script.turn_off_shower_light) if you want to do some
+        extra logic.
     - preset_water_warming:
         The preset name for the "water is warming"-state.
         E.g. a preset that lets the light shine blue.
     - preset_water_warm:
         The preset name for the "water is warm"-state.
         E.g. a preset that lets the light shine green.
-    - playlist_showering:
-        The playlist name for the "showering"-state.
-        This playlist can be filled with cool effects that play while showering.
     - preset_showering_long:
         The preset name for the "showering long"-state.
         E.g. red blinks red.
+    - playlist_showering:
+        The playlist name for the "showering"-state.
+        This playlist can be filled with cool effects that play while showering.
+
 
     Optional arguments:
     - led_strip_controlled_by_script:
@@ -89,9 +91,13 @@ class ShowerController(hass.Hass):
         # Arguments
         self.debug = self.args['debug']
 
-        self.water_heater = self.get_entity(self.args['water_heater_switch'])
-        self.led_strip_preset = self.get_entity(self.args['led_strip_preset'])
-        self.led_strip_playlist = self.get_entity(self.args['led_strip_playlist'])
+        self.entity_water_heater = self.get_entity(self.args['water_heater_switch'])
+        self.entity_led_strip_preset = self.get_entity(self.args['led_strip_preset'])
+        self.entity_led_strip_playlist = self.get_entity(self.args['led_strip_playlist'])
+        self.led_strip_turn_off = self.args['led_strip_turn_off']  # Would like to make it an entity directly,
+                                                                   # but we need to check if it starts with "script.",
+                                                                   # and I could not find a way to get an entity_id of
+                                                                   # of an entity object
 
         # Optional arguments
         self.led_strip_controlled_by_script = (self.args['led_strip_controlled_by_script'] if 'led_strip_controlled_by_script' in self.args else None)
@@ -179,24 +185,27 @@ class ShowerController(hass.Hass):
         self.cancel_timeout()
 
         if self.currentState == State.IDLE:
-            self.turn_on(self.args['led_strip_default_mode_script'])
-            self.water_heater.turn_off()
+            if self.led_strip_turn_off.startswith('script.'):
+                self.turn_on(self.led_strip_turn_off)
+            else:
+                self.turn_off(self.led_strip_turn_off)
+            self.entity_water_heater.turn_off()
 
         if self.currentState == State.WATER_WARMING:
-            self.led_strip_preset.call_service("select_option", option=self.args['preset_water_warming'])
-            self.water_heater.turn_on()
+            self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warming'])
+            self.entity_water_heater.turn_on()
             self.wait_for_heater()
 
         if self.currentState == State.WATER_WARM:
-            self.led_strip_preset.call_service("select_option", option=self.args['preset_water_warm'])
+            self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warm'])
             self.set_timeout(self.general_timeout_duration)
 
         if self.currentState == State.SHOWERING:
-            self.led_strip_playlist.call_service("select_option", option=self.args['playlist_showering'])
+            self.entity_led_strip_playlist.call_service("select_option", option=self.args['playlist_showering'])
             self.set_timeout(self.general_timeout_duration)
 
         if self.currentState == State.SHOWERING_LONG:
-            self.led_strip_preset.call_service("select_option", option=self.args['preset_showering_long'])
+            self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_showering_long'])
             self.set_timeout(self.general_timeout_duration)
 
     def cancel_timeout(self):
@@ -215,7 +224,7 @@ class ShowerController(hass.Hass):
         self.mylog(f"Waiting for heater to be on for {int(self.preheat_duration / 60)}min")
 
         try:
-            await self.water_heater.wait_state("on", duration=self.preheat_duration, timeout=self.preheat_duration)
+            await self.entity_water_heater.wait_state("on", duration=self.preheat_duration, timeout=self.preheat_duration)
             self.set_state(state=None, ignore_logic=True)
             self.execute_actions()
         except TimeOutException:
