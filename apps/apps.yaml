@@ -26,3 +26,22 @@ bad_oben_shower_controller:
   preset_water_warm: "Wasser warm"
   preset_showering_long: "Überschrittene Duschzeit"
   playlist_showering: "Dusch Effekt: Alles"
+
+RestChargeController:
+  module: RestChargeController
+  class: RestChargeController
+  debug: True
+  sensor_battery_percentage: sensor.sonnenbatterie_state_charge_real
+  sensor_production: sensor.sonnenbatterie_state_production_w
+  sensor_consumption: sensor.sonnenbatterie_state_consumption_w
+  switch_enable_control: input_boolean.solar_akku_steuerung_ubernehmen
+  switch_enable_battery: input_boolean.solar_akku_enable
+  switch_limit_percentage: input_boolean.solar_akku_limit_charge
+  switch_only_charge: input_boolean.solar_akku_nur_aufladen
+  switch_only_discharge: input_boolean.solar_akku_nur_entladen
+  battery_charge_limit: 97
+  battery_recharge_threshold: 95
+  url_discharge: "http://192.168.x.xxx/api/v2/setpoint/discharge/{}"
+  url_charge: "http://192.168.x.xxx/api/v2/setpoint/charge/{}"
+  url_headers: {"Auth-Token": "xxx"}
+  refresh_interval: 1
