@@ -114,6 +114,28 @@ You can just download them and copy the ones you need into your 'apps' folder.
     - image_rotation:
         If the cords aren't drawn correctly to the map, you can try rotating the image (0, 90, 180, 270)
 
+# RestChargeController
+    Only allow charge/discharge, limit the battery percentage and slow charging if the battery gets nearly full to not wear it that much.
+    Currently only works with house batteries for solar systems.
+
+    Requirements:
+    - The battery charge/discharge rate must be controllable by REST API
+    - You need a sensor for (in W):
+        - solar production
+        - house consumption
+        - current battery charge rate
+        - current battery discharge rate
+        - current battery percentage (in %)
+    - You need the following input booleans:
+        - Enable control (enabling the script)
+        - Enable battery (when off, battery in/out will be disabled)
+        - Limit percentage (if charging percentage should be limited)
+        - Only charge (only allow charging but no discharging)
+        - Only discharge (only allow discharging but no charging)
+    - You need some input booleans in HA
+
+    Example can be found in apps.yaml.
+
 # SolarDeviceController
 #### Not available yet, needs rewrite
     Control devices based on solar production, power consumption, battery percentage (optional) and time (optional)
@@ -124,12 +146,3 @@ You can just download them and copy the ones you need into your 'apps' folder.
     - Controlled devices need a rather constant consumption (Devices whose power supply varies a lot do not work well)
     - Need to know the average power consumption of the devices (for Example: 700W, 900W,...).
       It does not need smart plugs that measure the power consumption. These values must be hard-coded.
-# BatteryChargeLimiter
-#### Not available yet, needs rewrite
-#### Originally developed for solar battery, it is planned to make this work for more battery types (for example Smartphone charger with Smart Plug)
-    With this app you can limit the charge capacity of your batteries.
-    For some batteries, this can also only allow charge or only allow discharge.
-    
-    # TODO
-    Requirements:
-    - Controllable battery

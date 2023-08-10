@@ -21,11 +21,15 @@ class RestChargeController(hass.Hass):
 
         self.battery_charge_limit       = self.args['battery_charge_limit']
         self.battery_recharge_threshold = self.args['battery_recharge_threshold']
+        self.battery_slow_charge_percentage = self.args['battery_slow_charge_percentage']
+        self.battery_slow_charge_max_power = self.args['battery_slow_charge_max_power']
 
         self.url_discharge              = self.args['url_discharge']
         self.url_charge                 = self.args['url_charge']
         self.url_headers                = self.args['url_headers']
         self.refresh_interval           = self.args['refresh_interval']
+
+        self.charge_limit_reached       = False
 
         # Run all x seconds
         self.run_every(self.loop, start="now+2", interval=self.refresh_interval)
@@ -35,7 +39,7 @@ class RestChargeController(hass.Hass):
             self.log("(DEBUG) " + text)
 
     def block_battery(self):
-        self.charge_battery(0)
+        self.charge_battery(5) # Permanently charge with 5W to prevent battery draining
 
     """
     power: negative = discharge; positive = charge
@@ -67,22 +71,13 @@ class RestChargeController(hass.Hass):
         production = int(self.get_state(self.sensor_production))
         consumption = int(self.get_state(self.sensor_consumption))
 
-        # TODO
-        """
         # Block charge/discharge battery if percentage is limited
         if self.get_state(self.switch_limit_percentage) == 'on':
             if battery_percentage >= self.battery_charge_limit:
+                self.charge_limit_reached = True
 
-
-            # Limit charging level
-            if self.get_state(switch_limit_charge) == 'on' and production > consumption:
-                anyStepExecuted = True
-                if battery_percentage >= charge_limit:
-                    block_battery = True
-
-                if battery_percentage <= charge_again:
-                    block_battery = False
-        """
+            if battery_percentage <= self.battery_recharge_threshold:
+                self.charge_limit_reached = False
 
         # Prevent discharging (only allow charge)
         if self.get_state(self.switch_only_charge) == 'on':
@@ -92,17 +87,22 @@ class RestChargeController(hass.Hass):
                 return
 
         # Prevent charging (only allow discharge)
-        if self.get_state(self.switch_only_discharge) == 'on':
+        if self.get_state(self.switch_only_discharge) == 'on' or self.charge_limit_reached:
             if production >= consumption:
                 self.mylog("Battery is not allowed to charge.")
                 self.block_battery()
                 return
 
+        # charge slower if nearly full
+        charge_power = production - (consumption + 5)  # Permanently add 5W to consumption to have some buffer before importing power from the grid
+
+        if battery_percentage >= self.battery_slow_charge_percentage and charge_power > self.battery_slow_charge_max_power:
+            charge_power = self.battery_slow_charge_max_power
+
         # If this point in the script is reached, there are no more restrictions.
         # Battery can be freely controlled now.
-        # TODO charge slower if percentage is high
         # TODO smooth out battery charging (do not allow instantaneous (example) switch from charging with 2000W to discharging 2000W, which would be a 4000W difference)
         # TODO slower charging in the morning (somehow check if it is a sunny day). In the winter most of the time all power is needed that it can get. But if it's a sunny day it has enough time to charge slower.
-        self.charge_battery(production - consumption)
+        self.charge_battery(charge_power)
 
         self.mylog("----------")

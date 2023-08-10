@@ -30,7 +30,7 @@ bad_oben_shower_controller:
 RestChargeController:
   module: RestChargeController
   class: RestChargeController
-  debug: True
+  debug: False
   sensor_battery_percentage: sensor.sonnenbatterie_state_charge_real
   sensor_production: sensor.sonnenbatterie_state_production_w
   sensor_consumption: sensor.sonnenbatterie_state_consumption_w
@@ -41,7 +41,9 @@ RestChargeController:
   switch_only_discharge: input_boolean.solar_akku_nur_entladen
   battery_charge_limit: 97
   battery_recharge_threshold: 95
-  url_discharge: "http://192.168.x.xxx/api/v2/setpoint/discharge/{}"
-  url_charge: "http://192.168.x.xxx/api/v2/setpoint/charge/{}"
-  url_headers: {"Auth-Token": "xxx"}
-  refresh_interval: 1
+  battery_slow_charge_percentage: 90
+  battery_slow_charge_max_power: 1500
+  url_discharge: "http://192.168.5.xx/api/v2/setpoint/discharge/{}"
+  url_charge: "http://192.168.5.xx/api/v2/setpoint/charge/{}"
+  url_headers: { "Auth-Token": "xxx" }
+  refresh_interval: 2
