@@ -200,6 +200,7 @@ class ShowerController(hass.Hass):
             case State.IDLE:
                 self.entity_led_strip.turn_off()
                 self.entity_water_heater.turn_off()
+                self.cancel_timeout()
 
             case State.WATER_WARMING:
                 self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warming'])
@@ -208,14 +209,17 @@ class ShowerController(hass.Hass):
 
             case State.WATER_WARM:
                 self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warm'])
+                self.cancel_timeout()
                 self.set_timeout(self.timeout_water_warm)
 
             case State.SHOWERING:
                 self.entity_led_strip_playlist.call_service("select_option", option=self.args['playlist_showering'])
+                self.cancel_timeout()
                 self.set_timeout(self.timeout_long_shower)
 
             case State.SHOWERING_LONG:
                 self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_showering_long'])
+                self.cancel_timeout()
                 self.set_timeout(self.timeout_general)
 
     def set_timeout(self, seconds):
