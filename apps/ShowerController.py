@@ -87,6 +87,7 @@ class ShowerController(hass.Hass):
     def initialize(self):
         print("Initializing ShowerController")
         self.currentState = State.IDLE
+        self.timer_count = -1
 
         # Arguments
         self.debug = self.args['debug']
@@ -106,6 +107,9 @@ class ShowerController(hass.Hass):
         # Buttons
         self.get_entity(self.args['short_press_sensor']).listen_state(self.button_press_short)
         self.get_entity(self.args['long_press_sensor']).listen_state(self.button_press_long)
+
+        # Timer (executes timer_run every second to count down)
+        self.run_every(self.timer_run, start="now", interval=1)
 
     def mylog(self, msg):
         if self.debug:
@@ -212,20 +216,23 @@ class ShowerController(hass.Hass):
                 self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_showering_long'])
                 self.set_timeout(self.timeout_general)
 
+    def set_timeout(self, seconds):
+        if self.timer_count != -1:
+            self.mylog("Warning: Cannot set new timeout because a timer is already running!")
+            return
+
+        self.timer_count = seconds
+        self.mylog(f"Timeout for current action in state {self.currentState} set to {int(seconds / 60)}min.")
 
     def cancel_timeout(self):
-        # TODO cancel timer
+        self.timer_count = -1
         # TODO cancel wait for heater
-        self.mylog("(TODO) Timeout has been cancelled.")
+        self.mylog("Timeout has been cancelled.")
 
 
-    async def set_timeout(self, seconds):
-        self.mylog(f"Timeout for current action in state {self.currentState} set to {int(seconds / 60)}min.")
-        # TODO Timeout does not work that way because it is not cancelable
-        #time.sleep(seconds)
-        #self.set_state(state=None, ignore_logic=True)
-        #self.execute_actions()
-
+    def timer_run(self):
+        if self.timer_count > 0:
+            self.timer_count -= 1
 
     async def wait_for_heater(self):
         self.mylog(f"Waiting for heater to be on for {int(self.duration_heating / 60)}min")
