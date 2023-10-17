@@ -94,24 +94,23 @@ class ShowerController(hass.Hass):
         self.entity_water_heater = self.get_entity(self.args['water_heater_switch'])
         self.entity_led_strip_preset = self.get_entity(self.args['led_strip_preset'])
         self.entity_led_strip_playlist = self.get_entity(self.args['led_strip_playlist'])
-        self.led_strip_turn_off = self.args['led_strip_turn_off']  # Would like to make it an entity directly,
-                                                                   # but we need to check if it starts with "script.",
-                                                                   # and I could not find a way to get an entity_id of
-                                                                   # of an entity object
+        self.entity_led_strip = self.get_entity(self.args['led_strip'])
 
         # Optional arguments
         self.led_strip_controlled_by_script = (self.args['led_strip_controlled_by_script'] if 'led_strip_controlled_by_script' in self.args else None)
-        self.preheat_duration = (int(self.args['preheat_duration']) if 'preheat_duration' in self.args else 10) * 60
-        self.general_timeout_duration = (int(self.args['general_timeout_duration']) if 'general_timeout_duration' in self.args else 20) * 60
-        self.time_to_shower_warning = (int(self.args['time_to_shower_warning']) if 'time_to_shower_warning' in self.args else 10) * 60
+        self.duration_heating = (int(self.args['preheat_duration']) if 'preheat_duration' in self.args else 10) * 60
+        self.timeout_water_warm = (int(self.args['timeout_water_warm']) if 'timeout_water_warm' in self.args else 20) * 60
+        self.timeout_general = (int(self.args['general_timeout_duration']) if 'general_timeout_duration' in self.args else 20) * 60
+        self.timeout_long_shower = (int(self.args['time_to_shower_warning']) if 'time_to_shower_warning' in self.args else 10) * 60
 
-
+        # Buttons
         self.get_entity(self.args['short_press_sensor']).listen_state(self.button_press_short)
         self.get_entity(self.args['long_press_sensor']).listen_state(self.button_press_long)
 
     def mylog(self, msg):
         if self.debug:
             self.log(msg)
+
 
     #######
     # This is needed because sadly in the listen_state function from AppDaemon you cannot specify parameters
@@ -122,6 +121,7 @@ class ShowerController(hass.Hass):
     def button_press_long(self, entity, attribute, old, new, kwargs):
         self.handle_button_press(action=ButtonAction.LONG)
     #######
+
 
     def handle_button_press(self, action):
         if action == ButtonAction.SHORT:
@@ -184,34 +184,40 @@ class ShowerController(hass.Hass):
 
         self.cancel_timeout()
 
-        if self.currentState == State.IDLE:
-            if self.led_strip_turn_off.startswith('script.'):
-                self.turn_on(self.led_strip_turn_off)
+        if self.led_strip_controlled_by_script != None:
+            if(self.currentState == State.IDLE):
+                self.led_strip_controlled_by_script.turn_off()
             else:
-                self.turn_off(self.led_strip_turn_off)
-            self.entity_water_heater.turn_off()
+                self.led_strip_controlled_by_script.turn_on()
 
-        if self.currentState == State.WATER_WARMING:
-            self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warming'])
-            self.entity_water_heater.turn_on()
-            self.wait_for_heater()
+        match self.currentState:
+            case State.IDLE:
+                self.entity_led_strip.turn_off()
+                self.entity_water_heater.turn_off()
 
-        if self.currentState == State.WATER_WARM:
-            self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warm'])
-            self.set_timeout(self.general_timeout_duration)
+            case State.WATER_WARMING:
+                self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warming'])
+                self.entity_water_heater.turn_on()
+                self.wait_for_heater()
 
-        if self.currentState == State.SHOWERING:
-            self.entity_led_strip_playlist.call_service("select_option", option=self.args['playlist_showering'])
-            self.set_timeout(self.general_timeout_duration)
+            case State.WATER_WARM:
+                self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warm'])
+                self.set_timeout(self.timeout_water_warm)
 
-        if self.currentState == State.SHOWERING_LONG:
-            self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_showering_long'])
-            self.set_timeout(self.general_timeout_duration)
+            case State.SHOWERING:
+                self.entity_led_strip_playlist.call_service("select_option", option=self.args['playlist_showering'])
+                self.set_timeout(self.timeout_long_shower)
+
+            case State.SHOWERING_LONG:
+                self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_showering_long'])
+                self.set_timeout(self.timeout_general)
+
 
     def cancel_timeout(self):
-        self.mylog("Timeout has been cancelled.")
         # TODO cancel timer
-        print("TODO cancel timer")
+        # TODO cancel wait for heater
+        self.mylog("(TODO) Timeout has been cancelled.")
+
 
     async def set_timeout(self, seconds):
         self.mylog(f"Timeout for current action in state {self.currentState} set to {int(seconds / 60)}min.")
@@ -220,14 +226,16 @@ class ShowerController(hass.Hass):
         #self.set_state(state=None, ignore_logic=True)
         #self.execute_actions()
 
+
     async def wait_for_heater(self):
-        self.mylog(f"Waiting for heater to be on for {int(self.preheat_duration / 60)}min")
+        self.mylog(f"Waiting for heater to be on for {int(self.duration_heating / 60)}min")
 
         try:
-            await self.entity_water_heater.wait_state("on", duration=self.preheat_duration, timeout=self.preheat_duration)
+            await self.entity_water_heater.wait_state("on", duration=self.duration_heating, timeout=self.duration_heating + 5)
             self.set_state(state=None, ignore_logic=True)
             self.execute_actions()
         except TimeOutException:
             self.set_state(State.IDLE)
+            self.mylog("Error: Heating failed. Heater wasn't on state 'on' for long enough.")
             pass
 
