@@ -155,14 +155,16 @@ class ShowerController(hass.Hass):
         # If I set it to None with "state = None" it is none.. does someone know why this is??
         # if state is None:
         if state in (None, False):
-            # If executed by timeout, go through all steps...
+            # If executed without logic, go to the next step...
             if ignore_logic:
                 if self.currentState == len(State):
                     self.currentState = 1
                 else:
                     self.currentState += 1
-            # ..otherwise (if manually) specify the next state manually based on the current state
+            # ...otherwise skip some steps and apply a bit of logic
             else:
+                # Unable to use match (switch case) because we're checking for multiple states in some checks
+
                 # IDLE -> WATER_WARMING
                 if self.currentState == State.IDLE:
                     self.currentState = State.WATER_WARMING
@@ -233,6 +235,11 @@ class ShowerController(hass.Hass):
     def timer_run(self):
         if self.timer_count > 0:
             self.timer_count -= 1
+
+        if self.timer_count == 0:
+            self.timer_count = -1
+            self.mylog("Timeout timer finished! Proceeding to next step..")
+            self.set_state(ignore_logic=True)
 
     async def wait_for_heater(self):
         self.mylog(f"Waiting for heater to be on for {int(self.duration_heating / 60)}min")
