@@ -232,7 +232,6 @@ class ShowerController(hass.Hass):
 
     def cancel_timeout(self):
         self.timer_count = -1
-        # TODO cancel wait for heater
         self.mylog("Timeout has been cancelled.")
 
 
