@@ -235,7 +235,7 @@ class ShowerController(hass.Hass):
         self.mylog("Timeout has been cancelled.")
 
 
-    def timer_run(self):
+    def timer_run(self, kwargs=None):
         if self.timer_count > 0:
             self.timer_count -= 1
 
