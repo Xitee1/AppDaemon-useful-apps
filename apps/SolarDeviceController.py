@@ -10,14 +10,12 @@ class LastExcessState(Enum):
 
 
 class Device:
-    def __init__(self, name, consumption, enabled_by=None, enabled_state="on", minimum_toggle_interval=20):
+    def __init__(self, name, consumption, enabled, enabled_state="on", min_cycle_duration=20):
         self.name = name
         self.consumption = consumption
-        self.enabled_by = enabled_by
+        self.enabled = enabled
         self.enabled_state = enabled_state
-        self.minimum_toggle_interval = minimum_toggle_interval
-
-        self.enabled = False
+        self.min_cycle_duration = min_cycle_duration
 
 
 class SolarDeviceController(hass.Hass):
@@ -31,88 +29,40 @@ class SolarDeviceController(hass.Hass):
     Optional:
     - Solar house battery with current charge/discharge rate and percentage sensors
 
-    TODO make better english
-
-    Required arguments:
-    - solar_production:
-        A sensor with the current solar production power in W.
-    - solar_consumption:
-        A sensor with the current power consumption.
-    - has_battery:
-        Set this to true if you have a battery and want to make this script a bit smarter.
-    - battery_percentage:
-        A sensor with the current battery percentage.
-    - battery_target_percentage:
-        Before this percentage is reached, the script leaves at least 'battery_max_charge' Watts for the battery to charge.
-        This will make sure that the battery is charged before taking too much power. Because it could be the case that
-        the sun shines really bright in the morning and the script will turn on all devices. But then is no power left to charge the battery.
-        And if it begins to rain in the evening it will turn off the devices but the battery is still empty.
-
-    - battery_max_charge:
-        Specify the max input in W what your battery can handle.
-        For example my battery can charge at max with 3400W. In this case, set this to: 34000
-    - battery_min_charge:
-        After the 'battery_target_percentage' is reached, the battery will charge with this wattage until it is at 98%.
-        This value can be 0.
-    - power_on_wait_stable:
-        In seconds. Define how long there must be enough power for the devices before powering on.
-        This value should be good balanced.
-        This prevents that devices turn on for like only 2 min when there are quick power production spikes when it is very cloudy.
-    - power_off_wait_stable:
-        In seconds.
-        This prevents that the devices turn off just because there is a cloud for 2 mins that reduces the production.
-        You want this even with dumb heaters that don't care to be toggled often because this will wear and destroy your
-        smart plug relays faster.
     """
     def initialize(self):
-        print("Initializing SolarDeviceController")
+        self.log("Initializing SolarDeviceController")
+
+        # Init values
         self.debug = self.args['debug']
 
-        self.power_on_wait_stable = int(self.args['power_on_wait_stable'])
-        self.power_off_wait_stable = int(self.args['power_off_wait_stable'])
+        self.production_sensor = self.get_entity(self.args['production_sensor'])
+        self.consumption_sensor = self.get_entity(self.args['consumption_sensor'])
+        self.battery_sensor = self.get_entity(self.args['battery_percentage_sensor'])
+        self.check_interval = int(self.args['check_interval'])
 
-        self.solar_production_sensor = self.get_entity(self.args['solar_production'])
-        self.solar_consumption_sensor = self.get_entity(self.args['solar_consumption'])
 
         self.current_excess_state_timer = 0
         self.last_excess_state = LastExcessState.NONE
 
-        # TODO load devices from apps.yaml
-        # Optional parameters:
-        # - enabled_by - Entity that enables this device; Default: None
-        # - enabled_state - State for the enabled_by entity; Default: 'on'
-        # - minimum_toggle_interval - In seconds; Default: 20
-        self.devices = {
-            Device(
-                name="switch.heizteppich_kuche",
-                consumption=300,
-                enabled_by="input_boolean.solar_automatik_heizteppich_kuche",
-            ),
-            Device(
-                name="switch.heizteppich_esszimmer",
-                consumption=660,
-                enabled_by="input_boolean.solar_automatik_heizteppich_esszimmer",
-            ),
-            Device(
-                name="switch.heizung_bad_unten",
-                consumption=900,
-                enabled_by="input_boolean.solar_automatik_heizung_bad_unten",
-            ),
-            Device(
-                name="switch.heizung_werkstatt",
-                consumption=1500,
-                enabled_by="input_boolean.solar_automatik_heizung_werkstatt",
-            ),
-        }
-
-        print("Initialization finished!")
+        # Get devices
+        self.devices = []
+        raw_devices = self.args['devices']
+        for device in raw_devices:
+            self.devices.append(
+                Device(
+                    name=device['name'],
+                    consumption=int(device['consumption']),
+                    enabled=device['enabled'],
+                    enabled_state=device['enabled_state'],
+                    min_cycle_duration=int(device['min_cycle_duration']),
+                )
+            )
 
         # Start loop
-        self.run_every(self.loop, start="now+3", interval=1)
+        self.run_every(self.loop, start=f"now+{self.check_interval}", interval=self.check_interval)
 
-    def mylog(self, msg):
-        if self.debug:
-            self.log(msg)
+        self.log("Initialization finished!")
 
     """
     The loops needs to be called exactly every second in order to work correctly.
