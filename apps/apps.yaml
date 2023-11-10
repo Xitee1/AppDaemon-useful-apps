@@ -53,24 +53,23 @@ SolarDeviceController:
   production_sensor: sensor.sonnenbatterie_state_production_w
   consumption_sensor: sensor.sonnenbatterie_state_consumption_w
   battery_percentage_sensor: sensor.sonnenbatterie_state_charge_real
-  battery_min_percentage: 50
-  battery_charge_power: 1000
-  battery_charge_steps:
-    - percentage: 20 # When the battery is below 20%
-      min_charge: 500 # Only power on devices if there is enough power to charge the battery with at least 500W
-      before: '10:00' # As long as time is before 10:00 (24h format)
-    - percentage: 80
-      min_charge: 2000
+  battery_min_percentage: 40
+  #battery_charge_steps:
+  #  - percentage: 20 # When the battery is below 20%
+  #    min_charge: 500 # Only power on devices if there is enough power to charge the battery with at least 500W
+  #    before: '10:00' # As long as time is before 10:00 (24h format)
+  #  - percentage: 80
+  #    min_charge: 2000
 
   check_interval: 2
   devices:
     - entity: switch.bad_unten_heizung
       consumption: 900
-      enabled: input_boolean.solar_control_bad_unten_heizung
+      enabled_by: input_boolean.solar_control_bad_unten_heizung
       enabled_state: 'on'
       min_cycle_duration: 30
     - entity: switch.kuche_heizteppich
       consumption: 300
-      enabled: input_boolean.solar_control_kuche_heizteppich
+      enabled_by: input_boolean.solar_control_kuche_heizteppich
       enabled_state: 'on'
       min_cycle_duration: 30
