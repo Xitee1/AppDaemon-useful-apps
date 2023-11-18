@@ -12,7 +12,7 @@ You can just download them and copy the ones you need into your 'apps' folder.
 - [RoombaMap](https://github.com/Xitee1/AD-RoombaMap)
 - [ThermostatController](https://github.com/Xitee1/AD-ThermostatController)
 
-## ShowerController
+# ShowerController
 #### Timeout not working yet. State is only changeable by pressing the button - no water is warm signal, no long showering alarm.
 #### Example apps.yaml is out of date!
     Preheat the water, show the state of the heated water by the color of the light and when showering applying some cool effects to the light.
