@@ -1,16 +1,16 @@
 # AppDaemon-useful-apps
-These are all my AppDaemon apps that I have coded and use in my HomeAssistant.
-The apps are made to fit in my specific case, but I try to make them configurable so others can use them too.
+These are some of my AppDaemon apps that I have coded and use in my HomeAssistant.<br>
+**The apps are all experimental and in an early state. Some of them are only for testing.
+If an App is (nearly) ready for production, I will move it to into its own repo.**
+
 
 You can just download them and copy the ones you need into your 'apps' folder.
 
-#### Some apps do require [fonts](apps/fonts/README.md).
-#### Some apps do require [additional python packages](INSTALL_PY_PACKAGES.md).
+#### Some apps might require [additional python packages](INSTALL_PY_PACKAGES.md).
 
-### Important: These apps are in an early state and do not fully work yet.
-
-### General Todo
-- Move apps into their own folders and also create a README for all of them in that folder instead everything in the main README.
+### Check out my other apps:
+- [RoombaMap](https://github.com/Xitee1/AD-RoombaMap)
+- [ThermostatController](https://github.com/Xitee1/AD-ThermostatController)
 
 ## ShowerController
 #### Timeout not working yet. State is only changeable by pressing the button - no water is warm signal, no long showering alarm.
@@ -76,43 +76,6 @@ You can just download them and copy the ones you need into your 'apps' folder.
     - time_to_shower_warning:
         When showering longer than the set minutes the light will switch to the "preset_showering_long" preset indicating that you should stop showering.
         Default: 10
-
-## GenerateRoombaMap
-#### TODO keep history of old maps instead deleting them
-<img src="https://github.com/Xitee1/AppDaemon-useful-apps/assets/59659167/823517c2-d144-49ed-8333-e6b889889b78" height="300">
-
-    Generates a map of the area cleaned by Roomba.
-
-    To have the image in a camera entity:
-    - Add the following to your configuration.yaml:
-        camera:
-          - platform: local_file
-            name: Roomba Karte
-            file_path: /config/www/tmp/vacuum_yourRobotName/map.png
-
-    Requirements:
-    - A vacuum that exposes its cords as attribute the following format: Position (x, x, x)
-    - A floor plan of your home (// TODO make optional (but recommended) //)
-    - pillow python package (Read INSTALL_PY_PACKAGES.md)
-    - This app needs the "fonts" folder to work. // TODO For now, make sure the fonts are in the absolute path "/config/appdaemon/apps/fonts/Arimo-Bold.ttf"!! //
-
-    Required arguments:
-    - debug:
-        Enable debug log
-    - vacuum_entity:
-        Your vacuum entity. E.g. 'vacuum.roomba'
-    - vacuum_name:
-        Used for naming the vacuum folders.
-    - tmp_path:
-        Path to a tmp folder where the log and image should be stored. E.g. /config/www/tmp
-    - floor_plan_location:
-        The file path of your floor plan. E.g. '/config/floorplans/home.png'
-    - offset_cords_x:
-        Adjust the offset so the generated lines match the floor plan
-    - offset_cord_y:
-        Adjust the offset so the generated lines match the floor plan
-    - image_rotation:
-        If the cords aren't drawn correctly to the map, you can try rotating the image (0, 90, 180, 270)
 
 # RestChargeController
     Only allow charge/discharge, limit the battery percentage and slow charging if the battery gets nearly full to not wear it that much.
