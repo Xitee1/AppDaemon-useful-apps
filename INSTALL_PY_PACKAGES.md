@@ -1,7 +1,6 @@
 ### Install additional python packages in AppDaemon (HomeAssistant-Addon)
-You can install additional python packages in AppDaemon.
-Some of my apps require additional packages. For example GenerateRoombaMap.<br>
-They are listed in the requirements in each of my apps when they are needed.
+Some apps might require extra packages.<br>
+You can easily add additional python packages in AppDaemon (HomeAssistant).
 
 ### How to install
 <a href="https://my.home-assistant.io/redirect/supervisor_addon/?addon=a0d7b954_appdaemon" target="_blank"><img src="https://my.home-assistant.io/badges/supervisor_addon.svg" alt="Open your Home Assistant instance and show the dashboard of a Supervisor add-on." /></a><br>
