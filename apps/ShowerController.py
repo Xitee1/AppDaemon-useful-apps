@@ -36,12 +36,12 @@ class ShowerController(hass.Hass):
         self.debug = bool(self.args['debug']) if 'debug' in self.args else False
 
         self.shower_script = self.get_entity(self.args['shower_script'])
-        self.shower_prepare_duration = int(self.args['shower_prepare_duration']) if 'shower_prepare_duration' in self.args else None
+        self.shower_prepare_duration = int(self.args['shower_prepare_duration']) * 60 if 'shower_prepare_duration' in self.args else None
         self.shower_prepare_state = self.get_entity(self.args['shower_prepare_state']) if 'shower_prepare_state' in self.args else None
 
-        self.timeout_ready = int(self.args['timeout_ready'] if 'timeout_ready' in self.args else 20) * 60
-        self.timeout_in_use = int(self.args['timeout_in_use'] if 'timeout_in_use' in self.args else 10) * 60
-        self.timeout_get_out = int(self.args['timeout_get_out'] if 'timeout_get_out' in self.args else 5) * 60
+        self.timeout_ready = (int(self.args['timeout_ready']) if 'timeout_ready' in self.args else 20) * 60
+        self.timeout_in_use = (int(self.args['timeout_in_use']) if 'timeout_in_use' in self.args else 10) * 60
+        self.timeout_get_out = (int(self.args['timeout_get_out']) if 'timeout_get_out' in self.args else 5) * 60
 
         self.trigger_entity = self.get_entity(self.args['trigger_entity'])
         self.cancel_entity = self.get_entity(self.args['cancel_entity'])
@@ -117,7 +117,7 @@ class ShowerController(hass.Hass):
         else:
             self.current_state = state
 
-        self.clog(f"State has changed to {self.current_state}")
+        self.clog(f"State has been changed to {self.current_state}")
 
     # Execute action based on state
     def execute_actions(self):
@@ -127,22 +127,22 @@ class ShowerController(hass.Hass):
 
         match self.current_state:
             case State.IDLE:
-                self.shower_script.turn_on(state="idle")
+                self.shower_script.turn_on(variables={'state': 'idle'})
 
             case State.PREPARING:
-                self.shower_script.turn_on(state="preparing")
+                self.shower_script.turn_on(variables={'state': 'preparing'})
                 self.set_preparing_timeout()
 
             case State.READY:
-                self.shower_script.turn_on(state="ready")
+                self.shower_script.turn_on(variables={'state': 'ready'})
                 self.set_timeout(self.timeout_ready)
 
             case State.IN_USE:
-                self.shower_script.turn_on(state="in_use")
+                self.shower_script.turn_on(variables={'state': 'in_use'})
                 self.set_timeout(self.timeout_in_use)
 
             case State.GET_OUT:
-                self.shower_script.turn_on(state="get_out")
+                self.shower_script.turn_on(variables={'state': 'get_out'})
                 self.set_timeout(self.timeout_get_out)
 
     """
@@ -157,8 +157,10 @@ class ShowerController(hass.Hass):
         self.clog(f"Timeout for current action in state {self.current_state} set to {int(seconds / 60)}min.")
 
     def cancel_timeout(self):
-        self.timer_count = -1
-        self.clog("Timeout has been cancelled.")
+        if self.timer_count != -1:
+            self.timer_count = -1
+            self.clog("Timeout has been cancelled.")
+
 
     def timer_run(self, kwargs=None):
         if self.proceed_if_prepare_state and self.shower_prepare_state.get_state() == "on":
