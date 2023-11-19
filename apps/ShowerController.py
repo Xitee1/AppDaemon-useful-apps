@@ -1,20 +1,13 @@
 import hassapi as hass
 from enum import Enum
-import time
-from appdaemon.exceptions import TimeOutException
-
-
-class ButtonAction(Enum):
-    SHORT = 1
-    LONG = 2
 
 
 class State(Enum):
     IDLE = 1
-    WATER_WARMING = 2
-    WATER_WARM = 3
-    SHOWERING = 4
-    SHOWERING_LONG = 5
+    PREPARING = 2
+    READY = 3
+    IN_USE = 4
+    GET_OUT = 5
 
 
 class ShowerController(hass.Hass):
@@ -23,13 +16,10 @@ class ShowerController(hass.Hass):
     Only with a few presses on a button.
 
     Requirements:
-    - Switch for water heater ('switch.')
-    - Any entity that changes its state (only!) when pressing the button (each, for short and long press)
-    - LED strip in the shower running WLED
-    - Script to set the light to a default mode
-      In my case: After sunrise: Light goes off - After sunset: Light turn on at brightness level 1%
+    TODO
 
     How to use:
+    TODO update
     - Press the button once to turn on the water heater. The light will shine blue to indicate the cold water.
       After a set delay, it will turn green to indicate that the water should be warm now.
     - Right before you go under the shower, press the button again to set the script to showering state.
@@ -38,110 +28,55 @@ class ShowerController(hass.Hass):
     - After you're done showering, press the button again. This will set the light to the default mode and turns
       off the water heater.
     - A long press cancels everything - Light will go into default mode and water heater will turn off.
-
-    Required arguments:
-    - short_press_sensor:
-        A input_button that triggers when the button is pressed short.
-    - long_press_sensor:
-        A input_button that triggers when the button is pressed long.
-    - water_heater_switch:
-        The switch that will turn on the water heater.
-    - led_strip_preset:
-        The WLED preset 'select.' entity of the LED strip.
-    - led_strip_playlist:
-        The WLED playlist 'select.' entity of the LED strip.
-    - led_strip_turn_off:
-        Any entity with that turns the light off (e.g.: light.shower_light)
-        You can also specify a script here (e.g.: script.turn_off_shower_light) if you want to do some
-        extra logic.
-    - preset_water_warming:
-        The preset name for the "water is warming"-state.
-        E.g. a preset that lets the light shine blue.
-    - preset_water_warm:
-        The preset name for the "water is warm"-state.
-        E.g. a preset that lets the light shine green.
-    - preset_showering_long:
-        The preset name for the "showering long"-state.
-        E.g. red blinks red.
-    - playlist_showering:
-        The playlist name for the "showering"-state.
-        This playlist can be filled with cool effects that play while showering.
-
-
-    Optional arguments:
-    - led_strip_controlled_by_script:
-        This binary sensor will be set to on while the script is controlling the light. This allows you to use it as condition for other automations.
-        Use any entity id for it that does not exist.
-        Default: none
-    - preheat_duration:
-        How long the heater must be on so the state changes to "WATER_WARM". For example if your heater needs 10 minutes to make warm water, set it to 10.
-        Default: 10
-    - general_timeout_duration:
-        If a state takes longer than this timeout, the app cancels, turns off the heater and the lights.
-        Default: 20
-    - time_to_shower_warning:
-        When showering longer than the set minutes the light will switch to the "preset_showering_long" preset indicating that you should stop showering.
-        Default: 10
     """
 
     def initialize(self):
-        print("Initializing ShowerController")
-        self.currentState = State.IDLE
+        self.log("Initializing ShowerController..")
+        # Init arguments
+        self.debug = bool(self.args['debug']) if 'debug' in self.args else False
+
+        self.shower_script = self.get_entity(self.args['shower_script'])
+        self.shower_prepare_duration = int(self.args['shower_prepare_duration']) if 'shower_prepare_duration' in self.args else None
+        self.shower_prepare_state = self.get_entity(self.args['shower_prepare_state']) if 'shower_prepare_state' in self.args else None
+
+        self.timeout_ready = int(self.args['timeout_ready'] if 'timeout_ready' in self.args else 20) * 60
+        self.timeout_in_use = int(self.args['timeout_in_use'] if 'timeout_in_use' in self.args else 10) * 60
+        self.timeout_get_out = int(self.args['timeout_get_out'] if 'timeout_get_out' in self.args else 5) * 60
+
+        self.trigger_entity = self.get_entity(self.args['trigger_entity'])
+        self.cancel_entity = self.get_entity(self.args['cancel_entity'])
+
+        # Init vars
+        self.current_state = State.IDLE
         self.timer_count = -1
+        self.proceed_if_prepare_state = False
 
-        # Arguments
-        self.debug = self.args['debug']
-
-        self.entity_water_heater = self.get_entity(self.args['water_heater_switch'])
-        self.entity_led_strip_preset = self.get_entity(self.args['led_strip_preset'])
-        self.entity_led_strip_playlist = self.get_entity(self.args['led_strip_playlist'])
-        self.entity_led_strip = self.get_entity(self.args['led_strip'])
-
-        # Optional arguments
-        self.led_strip_controlled_by_script = (self.args['led_strip_controlled_by_script'] if 'led_strip_controlled_by_script' in self.args else None)
-        self.duration_heating = (int(self.args['preheat_duration']) if 'preheat_duration' in self.args else 10) * 60
-        self.timeout_water_warm = (int(self.args['timeout_water_warm']) if 'timeout_water_warm' in self.args else 20) * 60
-        self.timeout_general = (int(self.args['general_timeout_duration']) if 'general_timeout_duration' in self.args else 20) * 60
-        self.timeout_long_shower = (int(self.args['time_to_shower_warning']) if 'time_to_shower_warning' in self.args else 10) * 60
-
-        # Buttons
-        self.get_entity(self.args['short_press_sensor']).listen_state(self.button_press_short)
-        self.get_entity(self.args['long_press_sensor']).listen_state(self.button_press_long)
+        # Triggers
+        self.trigger_entity.listen_state(self.trigger_script)
+        self.cancel_entity.listen_state(self.cancel_script)
 
         # Timer (executes timer_run every second to count down)
         self.run_every(self.timer_run, start="now", interval=1)
 
-    def mylog(self, msg):
+        self.log("ShowerController initialized!")
+
+    def clog(self, msg):
         if self.debug:
             self.log(msg)
 
+    def trigger_script(self, entity, attribute, old, new, kwargs):
+        self.clog("Script triggered by trigger_entity. Proceed to next state (with logic).")
+        self.set_state()  # Do state logic and set next state
+        self.execute_actions()
 
-    #######
-    # This is needed because sadly in the listen_state function from AppDaemon you cannot specify parameters
-    # We also do not need all the arguments: entity, attribute, old, new, kwargs
-    def button_press_short(self, entity, attribute, old, new, kwargs):
-        self.handle_button_press(action=ButtonAction.SHORT)
+    def cancel_script(self, entity, attribute, old, new, kwargs):
+        self.clog("Script cancelled by cancel_entity. Script will return to idle mode.")
+        self.set_state(state=State.IDLE)
+        self.execute_actions()
 
-    def button_press_long(self, entity, attribute, old, new, kwargs):
-        self.handle_button_press(action=ButtonAction.LONG)
-    #######
-
-
-    def handle_button_press(self, action):
-        if action == ButtonAction.SHORT:
-            # Execute next-action
-            print("Shower-Button pressed shortly")
-
-            self.set_state()  # Do state logic and set next state
-            self.execute_actions()
-
-        if action == ButtonAction.LONG:
-            # Cancel script
-            print("Shower-Button pressed long")
-
-            self.set_state(state=State.IDLE)
-            self.execute_actions()
-
+    """
+    State handling
+    """
     def set_state(self, state=None, ignore_logic=False):
         """
         :param state: optional -> automatically go to next state
@@ -151,108 +86,101 @@ class ShowerController(hass.Hass):
         Sets a new shower state, either automatically or applies the wanted state from the state parameter.
         """
 
-        # For some reason state is not None by default as defined but False.
-        # If I set it to None with "state = None" it is none.. does someone know why this is??
-        # if state is None:
-        if state in (None, False):
+        # For some reason "state" is not "None" if undefined as it should be but "False".
+        # Does someone know from where the "False" comes? Clearly it is defined to be "None" if the param isn't passed.
+        if state is False:
+            state = None
+
+        if state is None:
             # If executed without logic, go to the next step...
             if ignore_logic:
-                if self.currentState == len(State):
-                    self.currentState = 1
+                if self.current_state == len(State):
+                    self.current_state = 1
                 else:
-                    self.currentState += 1
+                    self.current_state += 1
             # ...otherwise skip some steps and apply a bit of logic
             else:
-                # Unable to use match (switch case) because we're checking for multiple states in some checks
+                # IDLE -> PREPARING
+                if self.current_state == State.IDLE:
+                    self.current_state = State.PREPARING
 
-                # IDLE -> WATER_WARMING
-                if self.currentState == State.IDLE:
-                    self.currentState = State.WATER_WARMING
+                # PREPARING or READY -> IN_USE
+                elif self.current_state in (State.PREPARING, State.READY):
+                    self.current_state = State.IN_USE
 
-                # WATER_WARMING or WATER_WARM -> SHOWERING
-                elif self.currentState in (State.WATER_WARMING, State.WATER_WARM):
-                    self.currentState = State.SHOWERING
-
-                # SHOWERING or SHOWERING_LONG -> IDLE
-                elif self.currentState in (State.SHOWERING, State.SHOWERING_LONG):
-                    self.currentState = State.IDLE
+                # IN_USE or GET_OUT -> IDLE
+                elif self.current_state in (State.IN_USE, State.GET_OUT):
+                    self.current_state = State.IDLE
 
                 else:
-                    self.log(f"Error: Unknown state: {self.currentState}")
+                    self.log(f"Error: Unknown state: {self.current_state}")
         else:
-            self.currentState = state
+            self.current_state = state
 
-        self.mylog(f"State has changed to {self.currentState}")
+        self.clog(f"State has changed to {self.current_state}")
 
     # Execute action based on state
     def execute_actions(self):
-        self.mylog(f"Executing actions. Current state is: {self.currentState}")
+        self.clog(f"Executing actions. Current state is: {self.current_state}")
 
         self.cancel_timeout()
 
-        if self.led_strip_controlled_by_script != None:
-            if(self.currentState == State.IDLE):
-                self.led_strip_controlled_by_script.turn_off()
-            else:
-                self.led_strip_controlled_by_script.turn_on()
-
-        match self.currentState:
+        match self.current_state:
             case State.IDLE:
-                self.entity_led_strip.turn_off()
-                self.entity_water_heater.turn_off()
-                self.cancel_timeout()
+                self.shower_script.turn_on(state="idle")
 
-            case State.WATER_WARMING:
-                self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warming'])
-                self.entity_water_heater.turn_on()
-                self.wait_for_heater()
+            case State.PREPARING:
+                self.shower_script.turn_on(state="preparing")
+                self.set_preparing_timeout()
 
-            case State.WATER_WARM:
-                self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_water_warm'])
-                self.cancel_timeout()
-                self.set_timeout(self.timeout_water_warm)
+            case State.READY:
+                self.shower_script.turn_on(state="ready")
+                self.set_timeout(self.timeout_ready)
 
-            case State.SHOWERING:
-                self.entity_led_strip_playlist.call_service("select_option", option=self.args['playlist_showering'])
-                self.cancel_timeout()
-                self.set_timeout(self.timeout_long_shower)
+            case State.IN_USE:
+                self.shower_script.turn_on(state="in_use")
+                self.set_timeout(self.timeout_in_use)
 
-            case State.SHOWERING_LONG:
-                self.entity_led_strip_preset.call_service("select_option", option=self.args['preset_showering_long'])
-                self.cancel_timeout()
-                self.set_timeout(self.timeout_general)
+            case State.GET_OUT:
+                self.shower_script.turn_on(state="get_out")
+                self.set_timeout(self.timeout_get_out)
 
+    """
+    Timers & Timeout
+    """
     def set_timeout(self, seconds):
         if self.timer_count != -1:
-            self.mylog("Warning: Cannot set new timeout because a timer is already running!")
+            self.log("Error: Cannot set new timeout because a timer is already running!")
             return
 
         self.timer_count = seconds
-        self.mylog(f"Timeout for current action in state {self.currentState} set to {int(seconds / 60)}min.")
+        self.clog(f"Timeout for current action in state {self.current_state} set to {int(seconds / 60)}min.")
 
     def cancel_timeout(self):
         self.timer_count = -1
-        self.mylog("Timeout has been cancelled.")
-
+        self.clog("Timeout has been cancelled.")
 
     def timer_run(self, kwargs=None):
+        if self.proceed_if_prepare_state and self.shower_prepare_state.get_state() == "on":
+            self.proceed_if_prepare_state = False
+            self.set_state(ignore_logic=True)
+
         if self.timer_count > 0:
             self.timer_count -= 1
 
         if self.timer_count == 0:
             self.timer_count = -1
-            self.mylog("Timeout timer finished! Proceeding to next step..")
+            self.clog("Timeout reached! Proceeding to next step...")
+            self.proceed_if_prepare_state = False
             self.set_state(ignore_logic=True)
 
-    async def wait_for_heater(self):
-        self.mylog(f"Waiting for heater to be on for {int(self.duration_heating / 60)}min")
+    def set_preparing_timeout(self):
+        if self.shower_prepare_duration is None and self.shower_prepare_state is None:
+            self.log("Error: You need to define at least one of the two 'shower_prepare_duration' or 'shower_prepare_state' arguments!")
+            return
 
-        try:
-            await self.entity_water_heater.wait_state("on", duration=self.duration_heating, timeout=self.duration_heating + 5)
-            self.set_state(state=None, ignore_logic=True)
-            self.execute_actions()
-        except TimeOutException:
-            self.set_state(State.IDLE)
-            self.mylog("Error: Heating failed. Heater wasn't on state 'on' for long enough.")
-            pass
+        if self.shower_prepare_state is not None:
+            self.proceed_if_prepare_state = True
 
+        if self.shower_prepare_duration is not None:
+            self.set_timeout(self.shower_prepare_duration)
