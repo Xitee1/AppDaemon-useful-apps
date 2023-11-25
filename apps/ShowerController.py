@@ -67,12 +67,10 @@ class ShowerController(hass.Hass):
     def trigger_script(self, entity, attribute, old, new, kwargs):
         self.clog("Script triggered by trigger_entity. Proceed to next state (with logic).")
         self.set_state()  # Do state logic and set next state
-        self.execute_actions()
 
     def cancel_script(self, entity, attribute, old, new, kwargs):
         self.clog("Script cancelled by cancel_entity. Script will return to idle mode.")
         self.set_state(state=State.IDLE)
-        self.execute_actions()
 
     """
     State handling
@@ -118,6 +116,7 @@ class ShowerController(hass.Hass):
             self.current_state = state
 
         self.clog(f"State has been changed to {self.current_state}")
+        self.execute_actions()
 
     # Execute action based on state
     def execute_actions(self):
