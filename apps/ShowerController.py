@@ -92,10 +92,18 @@ class ShowerController(hass.Hass):
         if state is None:
             # If executed without logic, go to the next step...
             if ignore_logic:
-                if self.current_state == len(State):
-                    self.current_state = 1
-                else:
-                    self.current_state += 1
+                match self.current_state:
+                    case State.IDLE:
+                        self.current_state = State.PREPARING
+                    case State.PREPARING:
+                        self.current_state = State.READY
+                    case State.READY:
+                        self.current_state = State.IN_USE
+                    case State.IN_USE:
+                        self.current_state = State.GET_OUT
+                    case State.GET_OUT:
+                        self.current_state = State.IDLE
+
             # ...otherwise skip some steps and apply a bit of logic
             else:
                 # IDLE -> PREPARING
