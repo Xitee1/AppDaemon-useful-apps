@@ -1,19 +1,18 @@
 ---
 # Example configuration for the apps
-bad_oben_shower_controller:
+ShowerController_my_room:
   module: ShowerController
   class: ShowerController
   debug: True
-  short_press_sensor: input_button.bad_oben_showercontroller_short_press
-  long_press_sensor: input_button.bad_oben_showercontroller_long_press
-  water_heater_switch: switch.warmwasserpumpe
-  led_strip_preset: select.led_band_bad_preset
-  led_strip_playlist: select.led_band_bad_playlist
-  led_strip_turn_off: light.led_band_bad
-  preset_water_warming: "Wasser kalt hell"
-  preset_water_warm: "Wasser warm"
-  preset_showering_long: "Überschrittene Duschzeit"
-  playlist_showering: "Dusch Effekt: Alles"
+  shower_script: script.bad_oben_showercontroller
+  shower_prepare_duration: 15
+  #shower_prepare_state: None
+  timeout_ready: -1
+  timeout_in_use: 10
+  timeout_get_out: 5
+  trigger_entity: input_button.bad_oben_showercontroller_short_press
+  cancel_entity: input_button.bad_oben_showercontroller_long_press
+
 
 RestChargeController:
   module: RestChargeController
