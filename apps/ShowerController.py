@@ -160,6 +160,9 @@ class ShowerController(hass.Hass):
             self.log("Error: Cannot set new timeout because a timer is already running!")
             return
 
+        if seconds < 1:
+            self.log(f"Timeout for state {self.current_state} is below 1. Ignoring timeout (state will not proceed automatically).")
+
         self.timer_count = seconds
         self.clog(f"Timeout for current action in state {self.current_state} set to {int(seconds / 60)}min.")
 
