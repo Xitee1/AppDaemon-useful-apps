@@ -40,15 +40,18 @@ SolarDeviceController:
   production_sensor: sensor.sonnenbatterie_state_production_w
   consumption_sensor: sensor.sonnenbatterie_state_consumption_w
   battery_percentage_sensor: sensor.sonnenbatterie_state_charge_real
-  battery_min_percentage: 40
-  #battery_charge_steps:
-  #  - percentage: 20 # When the battery is below 20%
-  #    min_charge: 500 # Only power on devices if there is enough power to charge the battery with at least 500W
-  #    before: '10:00' # As long as time is before 10:00 (24h format)
-  #  - percentage: 80
-  #    min_charge: 2000
+  excess_buffer: 100
+  enabling_battery_percentage: 20 # Do not power on anything before the battery has reached this percentage. Even if there is excess power.
+  update_interval: 10
 
-  check_interval: 2
+  battery_states:
+    - percentage: 20 # When the battery percentage is below 20%
+      start: '10:00' # Between 10:00 and 23:59
+      end: '23:59'
+      min_charge_power: 500 # Battery should be charged with at least 500W
+    - percentage: 80 #
+      min_charge_power: 2000
+
   devices:
     - entity: switch.bad_unten_heizung
       consumption: 900
