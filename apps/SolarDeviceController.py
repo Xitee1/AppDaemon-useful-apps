@@ -28,16 +28,14 @@ class Device:
         self.__enabled_by = self.get_entity(self.__enabled_by) if self.__enabled_by_id else None
 
     def turn_on(self):
-        if device_state == 'off':
-            device_entity.turn_on()
-            device.powered_on = True
+        if self.__entity.get_state() == 'off':
+            self.__entity.turn_on()
             return True
         return False
 
     def turn_off(self):
-        if device_state == 'on':
-            device_entity.turn_off()
-            device.powered_on = True
+        if self.__entity.get_state() == 'on':
+            self.__entity.turn_off()
             return True
         return False
 
@@ -72,6 +70,10 @@ class SolarDeviceController(hass.Hass):
 
         self.current_excess_state_timer = 0
         self.last_excess_state = LastExcessState.NONE
+
+        self.max_excess_state_timer = 60*5 # Stop counting if it has reached 5min
+        self.excess_state_timer_add_factor = 1
+        self.excess_state_timer_remove_factor = 5
 
         # Init values from params
         self.debug = self.args['debug']
@@ -129,6 +131,13 @@ class SolarDeviceController(hass.Hass):
             battery_percentage = int(self.battery_sensor.get_state())
             if battery_percentage < self.enabling_battery_percentage:
                 excess_power = -1
+            else:
+                for battery_state in self.battery_states:
+                    # TODO check time ranges
+                    in_time_range = True
+                    if battery_state.percentage <= battery_percentage and in_time_range:
+                        excess_power -= battery_state.min_charge_power
+                        break
 
         # Add consumption of already powered on devices to access (to prevent toggling on each update)
         for device in self.devices:
@@ -144,7 +153,7 @@ class SolarDeviceController(hass.Hass):
             excess_state = self.last_excess_state
 
         if self.last_excess_state == excess_state:
-            self.current_excess_state_timer += 1
+            self.current_excess_state_timer += self.excess_state_timer_add_factor
         else:
             # Add some buffer. For example afternoons the production is since 100 seconds 150W below the consumption
             # while it is cloudy. But if the sun passes through a cloud for like 5 seconds and after that the production
@@ -152,18 +161,13 @@ class SolarDeviceController(hass.Hass):
             # even longer. Because of that we do not instantly set it to 0, but we divide the current timer by 10 and
             # remove that value from it. This means the timer gets reduced a lot and will be at 0 after around 10 secs
             # but will not instantly set to 0.
-            # factor: lower = faster; higher value = slower
-            factor = 10
-            amount = int((self.current_excess_state_timer / factor))
-            if amount < factor:
-                amount = factor
-            self.current_excess_state_timer -= amount
-            if self.current_excess_state_timer <= 5:
-                self.current_excess_state_timer = 0
+            remove_amount = int((self.current_excess_state_timer / self.excess_state_timer_remove_factor))
+            if remove_amount < factor:
+                remove_amount = 0
+            self.current_excess_state_timer -= remove_amount
 
         if self.current_excess_state_timer == 0:
             self.last_excess_state = excess_state
-
 
         self.log(f"Excess power: {excess_power}; current_state_timer: {self.current_excess_state_timer}; excess_state: {self.last_excess_state}")
 
