@@ -77,7 +77,7 @@ class SolarDeviceController(hass.Hass):
         self.battery_sensor = self.get_entity(self.args[s]) if (s := 'battery_percentage_sensor') in self.args else None
         self.excess_buffer = int(self.args[s]) if (s := 'excess_buffer') in self.args else 10
         self.enabling_battery_percentage = int(self.args[s]) if (s := 'enabling_battery_percentage') in self.args else 0
-        self.enabling_switch = self.get_entity(self.args[s]) if (s := 'enabled_switch_id') in self.args else None
+        self.enabling_switch = self.get_entity(self.args[s]) if (s := 'enabling_switch') in self.args else None
 
         # Init vars
         update_interval = int(self.args[s]) if (s := 'update_interval') in self.args else 10
@@ -133,6 +133,8 @@ class SolarDeviceController(hass.Hass):
             for device in self.devices:
                 if device.turned_on_by_script:
                     device.turn_off()
+            self.clog("Controller is disabled (by 'enabling_switch'). "
+                      "All devices that were turned on by this script have been turned off.")
             return
 
         production = int(self.production_sensor.get_state())
