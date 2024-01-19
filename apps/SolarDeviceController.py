@@ -67,17 +67,18 @@ class SolarDeviceController(hass.Hass):
         self.log("Initializing SolarDeviceController")
 
         # Init global values from params
-        self.debug = bool(self.args['debug']) if 'debug' in self.args else False
+        self.debug = bool(self.args[s]) if (s := 'debug') in self.args else False
 
         self.production_sensor = self.get_entity(self.args['production_sensor'])
         self.consumption_sensor = self.get_entity(self.args['consumption_sensor'])
-        self.battery_sensor = self.get_entity(self.args['battery_percentage_sensor']) if 'battery_percentage_sensor' in self.args else None
-        self.excess_buffer = int(self.args['excess_buffer']) if 'excess_buffer' in self.args else 10
-        self.enabling_battery_percentage = int(self.args['enabling_battery_percentage']) if 'enabling_battery_percentage' in self.args else 0
+        self.battery_sensor = self.get_entity(self.args[s]) if (s := 'battery_percentage_sensor') in self.args else None
+        self.excess_buffer = int(self.args[s]) if (s := 'excess_buffer') in self.args else 10
+        self.enabling_battery_percentage = int(self.args[s]) if (s := 'enabling_battery_percentage') in self.args else 0
+        self.enabling_switch = self.get_entity(self.args[s]) if (s := 'enabled_switch_id') in self.args else None
 
         # Init vars
-        update_interval = int(self.args['update_interval']) if 'update_interval' in self.args else 10
-        state_settle_time = int(self.args['state_settle_time']) if 'state_settle_time' in self.args else 60
+        update_interval = int(self.args[s]) if (s := 'update_interval') in self.args else 10
+        state_settle_time = int(self.args[s]) if (s := 'state_settle_time') in self.args else 60
 
         self.current_excess_state_timer = 0
         self.last_excess_state = ExcessState.NONE
