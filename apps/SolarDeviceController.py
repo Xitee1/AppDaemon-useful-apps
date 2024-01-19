@@ -82,7 +82,7 @@ class SolarDeviceController(hass.Hass):
         self.enabling_battery_percentage = int(self.args['enabling_battery_percentage']) if 'enabling_battery_percentage' in self.args else 0
         self.update_interval = int(self.args['update_interval']) if 'update_interval' in self.args else 10
 
-        self.max_excess_state_timer = (60 * 5) / self.update_interval  # Stop counting if it has been reached 5min
+        self.max_excess_state_timer = int((60 * 5) / self.update_interval)  # Stop counting if it has been reached 5min
 
         # Initialize devices
         self.devices = []
