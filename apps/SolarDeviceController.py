@@ -159,7 +159,7 @@ class SolarDeviceController(hass.Hass):
             excess_state = self.last_excess_state
 
         if self.last_excess_state == excess_state:
-            if self.current_excess_state_timer >= self.max_excess_state_timer:
+            if self.current_excess_state_timer < self.max_excess_state_timer:
                 self.current_excess_state_timer += self.excess_state_timer_add_factor
         else:
             # Add some buffer. For example afternoons the production is since 100 seconds 150W below the consumption
@@ -183,6 +183,7 @@ class SolarDeviceController(hass.Hass):
             for device in self.devices:
                 excess_power -= self.control_device(device, excess_power)
 
+            # This should nearly match the grid excess power if the battery is full (or if you don't have one).
             self.clog(f"Excess (controlled devices included): {excess_power}")
 
     """
