@@ -45,21 +45,23 @@ SolarDeviceController:
   update_interval: 10
 
   battery_states:
-    - percentage: 20 # When the battery percentage is below 20%
-      start: '10:00' # Between 10:00 and 23:59
+    - percentage: 70 # If the battery percentage is 80% or below
+      start: '00:00' # Between 00:00 and 23:59
       end: '23:59'
-      min_charge_power: 500 # Battery should be charged with at least 500W
-    - percentage: 80 #
-      min_charge_power: 2000
+      min_charge_power: 3000
+
+    - percentage: 95 # If the battery percentage is 95% or below
+      start: '00:00' # Between 00:00 and 23:59
+      end: '23:59'
+      min_charge_power: 500
 
   devices:
-    - entity: switch.bad_unten_heizung
-      consumption: 900
-      enabled_by: input_boolean.solar_control_bad_unten_heizung
-      enabled_state: 'on'
-      min_cycle_duration: 30
     - entity: switch.kuche_heizteppich
       consumption: 300
-      enabled_by: input_boolean.solar_control_kuche_heizteppich
-      enabled_state: 'on'
+      #enabled_by: input_boolean.solar_control_bad_unten_heizung
+      min_cycle_duration: 30
+
+    - entity: switch.esszimmer_heizteppich
+      consumption: 740
+      #enabled_by: input_boolean.solar_control_kuche_heizteppich
       min_cycle_duration: 30
