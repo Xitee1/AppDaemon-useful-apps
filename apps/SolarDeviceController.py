@@ -21,22 +21,25 @@ class Device:
     def __init__(self, ad, entity_id, consumption, enabled=False, enabled_by=None, min_cycle_duration=30):
         self.entity_id = entity_id
         self.consumption = consumption
+        self.turned_on_by_script = False
         self.__enabled = enabled
         self.__enabled_by_id = enabled_by
         self.__min_cycle_duration = min_cycle_duration
 
         self.__ad = ad
         self.__entity = ad.get_entity(self.entity_id)
-        self.__enabled_by = ad.get_entity(self.__enabled_by) if self.__enabled_by_id else None
+        self.__enabled_by = ad.get_entity(self.__enabled_by_id) if self.__enabled_by_id else None
 
     def is_wanted_state(self, state="on"):
         return self.__entity.get_state() == state
 
     def turn_on(self):
         self.__entity.turn_on()
+        self.turned_on_by_script = True
 
     def turn_off(self):
         self.__entity.turn_off()
+        self.turned_on_by_script = False
 
     def is_enabled(self):
         if not self.__enabled:
@@ -126,6 +129,12 @@ class SolarDeviceController(hass.Hass):
     The loops needs to be called exactly every second in order to work correctly.
     """
     def loop(self, entity=None, attribute=None, old=None, new=None, kwargs=None):
+        if self.enabling_switch is not None and self.enabling_switch.get_state() == 'off':
+            for device in self.devices:
+                if device.turned_on_by_script:
+                    device.turn_off()
+            return
+
         production = int(self.production_sensor.get_state())
         consumption = int(self.consumption_sensor.get_state())
         excess_power = (production - consumption) + self.excess_buffer
@@ -135,6 +144,7 @@ class SolarDeviceController(hass.Hass):
             battery_percentage = int(self.battery_sensor.get_state())
             if battery_percentage < self.enabling_battery_percentage:
                 excess_power = -1
+                self.clog("Set excess power to -1 because battery is too low (enabling_battery_percentage).")
             else:
                 for battery_state in self.battery_states:
                     # TODO check time ranges
