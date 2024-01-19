@@ -1,0 +1,69 @@
+blueprint:
+  name: Shower Controller
+  description: Script for the ShowerController AppDaemon App
+  domain: script
+  input:
+    actions_idle:
+      name: Actions - Idle
+      description: Actions to be executed when state is set to idle.
+      selector:
+        action: {}
+    actions_preparing:
+      name: Actions - Preparing
+      description: Actions to be executed when state is set to preparing.
+      selector:
+        action: {}
+    actions_ready:
+      name: Actions - Ready
+      description: Actions to be executed when state is set to ready.
+      selector:
+        action: {}
+    actions_in_use:
+      name: Actions - In use
+      description: Actions to be executed when state is set to in use.
+      selector:
+        action: {}
+    actions_get_out:
+      name: Actions - Get out
+      description: Actions to be executed when state is set to get out.
+      selector:
+        action: {}
+          
+sequence:
+  - condition: template
+    value_template: "{{ state is defined }}"
+    alias: Check if 'state' argument is defined
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ state == 'idle' }}"
+            alias: Check state
+        sequence: !input actions_idle
+        alias: Idle
+      - conditions:
+          - condition: template
+            value_template: "{{ state == 'preparing' }}"
+            alias: Check state
+        sequence: !input actions_preparing
+        alias: Preparing
+      - conditions:
+          - condition: template
+            value_template: "{{ state == 'ready' }}"
+            alias: Check state
+        sequence: !input actions_ready
+        alias: Ready
+      - conditions:
+          - condition: template
+            value_template: "{{ state == 'in_use' }}"
+            alias: Check state
+        sequence: !input actions_in_use
+        alias: In use
+      - conditions:
+          - condition: template
+            value_template: "{{ state == 'get_out' }}"
+            alias: Check state
+        sequence: !input actions_get_out
+        alias: Get out
+      
+mode: restart

@@ -5,8 +5,8 @@ ShowerController_my_room:
   class: ShowerController
   debug: True
   shower_script: script.bad_oben_showercontroller
-  shower_prepare_duration: 15
   #shower_prepare_state: None
+  shower_prepare_duration: 15
   timeout_ready: -1
   timeout_in_use: 10
   timeout_get_out: 5
