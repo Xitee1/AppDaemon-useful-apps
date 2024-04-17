@@ -48,12 +48,13 @@ class ShowerController(hass.Hass):
 
         # Init vars
         self.current_state = State.IDLE
-        self.timer_count = -1
-        self.proceed_if_prepare_state = False
+        self.timeout_count = -1
 
         # Triggers
         self.trigger_entity.listen_state(self.trigger_script)
         self.cancel_entity.listen_state(self.cancel_script)
+        if self.shower_prepare_state is not None:
+            self.shower_prepare_state.listen_state(self.shower_prepare_state_updated())
 
         # Timer (executes timer_run every second to count down)
         self.run_every(self.timer_run, start="now", interval=1)
@@ -66,7 +67,7 @@ class ShowerController(hass.Hass):
 
     def trigger_script(self, entity, attribute, old, new, kwargs):
         self.clog("Script triggered by trigger_entity. Proceed to next state (with logic).")
-        self.set_state()  # Do state logic and set next state
+        self.set_state()  # Go to next state
 
     def cancel_script(self, entity, attribute, old, new, kwargs):
         self.clog("Script cancelled by cancel_entity. Script will return to idle mode.")
@@ -138,7 +139,7 @@ class ShowerController(hass.Hass):
 
             case State.PREPARING:
                 self.shower_script.turn_on(variables={'state': 'preparing'})
-                self.set_preparing_timeout()
+                self.set_timeout(self.shower_prepare_duration)
 
             case State.READY:
                 self.shower_script.turn_on(variables={'state': 'ready'})
@@ -156,43 +157,36 @@ class ShowerController(hass.Hass):
     Timers & Timeout
     """
     def set_timeout(self, seconds):
-        if self.timer_count != -1:
+        if seconds is None:
+            return
+
+        if self.timeout_count != -1:
             self.log("Error: Cannot set new timeout because a timer is already running!")
             return
 
         if seconds < 1:
             self.log(f"Timeout for state {self.current_state} is below 1. Ignoring timeout (state will not proceed automatically).")
 
-        self.timer_count = seconds
+        self.timeout_count = seconds
         self.clog(f"Timeout for current action in state {self.current_state} set to {int(seconds / 60)}min.")
 
     def cancel_timeout(self):
-        if self.timer_count != -1:
-            self.timer_count = -1
+        if self.timeout_count != -1:
+            self.timeout_count = -1
             self.clog("Timeout has been cancelled.")
 
-
     def timer_run(self, kwargs=None):
-        if self.proceed_if_prepare_state and self.shower_prepare_state.get_state() == "on":
-            self.proceed_if_prepare_state = False
-            self.set_state(ignore_logic=True)
+        if self.timeout_count > 0:
+            self.timeout_count -= 1
 
-        if self.timer_count > 0:
-            self.timer_count -= 1
-
-        if self.timer_count == 0:
-            self.timer_count = -1
+        if self.timeout_count == 0:
+            self.timeout_count = -1
             self.clog("Timeout reached! Proceeding to next step...")
-            self.proceed_if_prepare_state = False
             self.set_state(ignore_logic=True)
 
-    def set_preparing_timeout(self):
-        if self.shower_prepare_duration is None and self.shower_prepare_state is None:
-            self.log("Error: You need to define at least one of the two 'shower_prepare_duration' or 'shower_prepare_state' arguments!")
-            return
-
-        if self.shower_prepare_state is not None:
-            self.proceed_if_prepare_state = True
-
-        if self.shower_prepare_duration is not None:
-            self.set_timeout(self.shower_prepare_duration)
+    def shower_prepare_state_updated(self):
+        if self.current_state in (State.PREPARING, State.READY):
+            if self.shower_prepare_state.get_state() == "on":
+                self.set_state(state=State.READY)
+            else:
+                self.set_state(state=State.PREPARING)
