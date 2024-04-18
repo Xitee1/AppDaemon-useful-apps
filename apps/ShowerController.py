@@ -185,7 +185,7 @@ class ShowerController(hass.Hass):
             self.clog("Timeout reached! Proceeding to next step...")
             self.set_state(ignore_logic=True)
 
-    def shower_prepare_state_update(self):
+    def shower_prepare_state_update(self, entity=None, attribute=None, old=None, new=None, kwargs=None):
         if self.current_state in (State.PREPARING, State.READY):
             if self.shower_prepare_state.get_state() == "on":
                 self.set_state(state=State.READY)
