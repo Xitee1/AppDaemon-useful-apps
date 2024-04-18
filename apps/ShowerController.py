@@ -54,7 +54,7 @@ class ShowerController(hass.Hass):
         self.trigger_entity.listen_state(self.trigger_script)
         self.cancel_entity.listen_state(self.cancel_script)
         if self.shower_prepare_state is not None:
-            self.shower_prepare_state.listen_state(self.shower_prepare_state_updated())
+            self.shower_prepare_state.listen_state(self.shower_prepare_state_update)
 
         # Timer (executes timer_run every second to count down)
         self.run_every(self.timer_run, start="now", interval=1)
@@ -68,6 +68,7 @@ class ShowerController(hass.Hass):
     def trigger_script(self, entity, attribute, old, new, kwargs):
         self.clog("Script triggered by trigger_entity. Proceed to next state (with logic).")
         self.set_state()  # Go to next state
+        self.shower_prepare_state_update()
 
     def cancel_script(self, entity, attribute, old, new, kwargs):
         self.clog("Script cancelled by cancel_entity. Script will return to idle mode.")
@@ -184,7 +185,7 @@ class ShowerController(hass.Hass):
             self.clog("Timeout reached! Proceeding to next step...")
             self.set_state(ignore_logic=True)
 
-    def shower_prepare_state_updated(self):
+    def shower_prepare_state_update(self):
         if self.current_state in (State.PREPARING, State.READY):
             if self.shower_prepare_state.get_state() == "on":
                 self.set_state(state=State.READY)
